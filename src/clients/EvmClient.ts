@@ -1,4 +1,4 @@
-import { Wallet, ethers } from 'ethers';
+import { Wallet, utils, ethers } from 'ethers';
 import { EvmNetworkConfig } from 'config';
 import {
   IAxelarGateway__factory,
@@ -149,18 +149,25 @@ export class EvmClient {
       });
   }
 
-  private submitTx(
+  private async submitTx(
     tx: ethers.providers.TransactionRequest,
     retryAttempt = 0
   ): Promise<ethers.providers.TransactionReceipt> {
     // submit tx with retries
     if (retryAttempt >= this.maxRetry) throw new Error('Max retry exceeded');
+    // Get the current gas price from the network
+    const gasPrice = await this.wallet.getGasPrice();
+
     return this.wallet
-      .sendTransaction(tx)
+      .sendTransaction({
+        ...tx,
+        gasPrice,
+        gasLimit: utils.hexValue(5000000),
+      })
       .then((t) => t.wait())
       .catch(async (e: any) => {
         logger.error(
-          `[EvmClient.submitTx] Failed ${e.error.reason} to: ${tx.to} data: ${tx.data}`
+          `[EvmClient.submitTx] Failed ${e} ${e.error} ${e.error.reason} to: ${tx.to} data: ${tx.data}`
         );
         await sleep(this.retryDelay);
         logger.debug(`Retrying tx: ${retryAttempt + 1}`);

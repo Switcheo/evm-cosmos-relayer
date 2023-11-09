@@ -13,10 +13,13 @@ services:
       timeout: 5s
       retries: 5
     ports:
-      - 5432:5432
+      - 5431:5432
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: relayer
     volumes:
-      - ./.db:/var/lib/postgresql/data
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:

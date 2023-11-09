@@ -1,10 +1,10 @@
 [
   {
-    "chainId": "osmo-test-4",
-    "denom": "uosmo",
-    "gasPrice": "0.0125",
-    "rpcUrl": "https://rpc-test.osmosis.zone:443",
-    "lcdUrl": "https://lcd-test.osmosis.zone",
-    "ws": "wss://rpc.testnet.osmosis.zone/websocket"
+    "chainId": "carbon-local",
+    "denom": "swth",
+    "gasPrice": "2000.0",
+    "rpcUrl": "http://localhost:26657",
+    "lcdUrl": "http://localhost:1317",
+    "ws": "ws://localhost:26657/websocket"
   }
 ]
