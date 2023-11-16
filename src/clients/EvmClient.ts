@@ -11,7 +11,7 @@ import { sleep } from './sleep';
 import { logger } from '../logger';
 
 export class EvmClient {
-  private wallet: Wallet;
+  public wallet: Wallet;
   public gateway: IAxelarGateway;
   private maxRetry: number;
   private retryDelay: number;
