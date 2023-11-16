@@ -13,7 +13,7 @@ async function main() {
 
   const tx = await evmClient.gatewayExecute(executeData);
   if (!tx) return;
-  console.log(`[handleCosmosToEvmEvent] Execute: ${tx.transactionHash}`);
+  console.log(`gatewayExecute: ${tx.transactionHash}`);
 }
 
 (async () => {

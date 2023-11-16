@@ -12,7 +12,7 @@ import { logger } from '../logger';
 
 export class EvmClient {
   private wallet: Wallet;
-  private gateway: IAxelarGateway;
+  public gateway: IAxelarGateway;
   private maxRetry: number;
   private retryDelay: number;
   private finalityBlocks: number;
