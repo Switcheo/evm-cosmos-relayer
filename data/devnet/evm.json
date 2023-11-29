@@ -4,6 +4,6 @@
     "name": "bsc-testnet",
     "finality": 16,
     "rpcUrl": "https://data-seed-prebsc-1-s2.binance.org:8545",
-    "gateway": "0x7cf6c023FDb9e438e486c5291Af907Bf500cDd63"
+    "gateway": "0x169ee9364B412B986d09e628eb74e60B2C092729"
   }
 ]
