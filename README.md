@@ -16,7 +16,7 @@ Make sure docker engine is running. We use docker for spin up local postgres db.
 2. Run `yarn`
 3. Run `make up` to run postgres db container.
 4. Wait until the db is ready to accept connection, then run `make prisma-push` to create database and tables.
-5. Run `prisma-generate` to generate db types.
+5. Run `make prisma-generate` to generate db types.
 6. Run `yarn start:dev` to start the relayer
 
 ## API

@@ -130,6 +130,13 @@ export async function handleCosmosToEvmCallContractCompleteEvent(
 ) {
   const { commandId, contractAddress, sourceAddress, sourceChain, payloadHash } = event.args;
 
+  if (contractAddress.toLowerCase() === "0xd008d68692224b70cAf19ec6443c463A735Ce9f2".toLowerCase()) {
+    logger.info(
+      `[handleCosmosToEvmCallContractCompleteEvent]: Skipping for contract 0xd008d68692224b70cAf19ec6443c463A735Ce9f2 devnet testing payloadHash:: ${payloadHash}`
+    );
+    return undefined
+  }
+
   if (!relayDatas || relayDatas.length === 0) {
     logger.info(
       `[handleCosmosToEvmCallContractCompleteEvent]: Cannot find payload from given payloadHash: ${payloadHash}`
