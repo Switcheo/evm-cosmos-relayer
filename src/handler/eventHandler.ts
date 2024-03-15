@@ -130,9 +130,9 @@ export async function handleCosmosToEvmCallContractCompleteEvent(
 ) {
   const { commandId, contractAddress, sourceAddress, sourceChain, payloadHash } = event.args;
 
-  if (contractAddress.toLowerCase() === "0xd008d68692224b70cAf19ec6443c463A735Ce9f2".toLowerCase()) {
+  if (contractAddress.toLowerCase() === "0xCBCBE6c390657f4E40151B6301066fe4FCdd14Ac".toLowerCase()) {
     logger.info(
-      `[handleCosmosToEvmCallContractCompleteEvent]: Skipping for contract 0xd008d68692224b70cAf19ec6443c463A735Ce9f2 devnet testing payloadHash:: ${payloadHash}`
+      `[handleCosmosToEvmCallContractCompleteEvent]: Skipping for contract 0xCBCBE6c390657f4E40151B6301066fe4FCdd14Ac devnet testing payloadHash:: ${payloadHash}`
     );
     return undefined
   }
