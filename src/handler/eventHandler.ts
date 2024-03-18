@@ -130,13 +130,6 @@ export async function handleCosmosToEvmCallContractCompleteEvent(
 ) {
   const { commandId, contractAddress, sourceAddress, sourceChain, payloadHash } = event.args;
 
-  if (contractAddress.toLowerCase() === "0xCBCBE6c390657f4E40151B6301066fe4FCdd14Ac".toLowerCase()) {
-    logger.info(
-      `[handleCosmosToEvmCallContractCompleteEvent]: Skipping for contract 0xCBCBE6c390657f4E40151B6301066fe4FCdd14Ac devnet testing payloadHash:: ${payloadHash}`
-    );
-    return undefined
-  }
-
   if (!relayDatas || relayDatas.length === 0) {
     logger.info(
       `[handleCosmosToEvmCallContractCompleteEvent]: Cannot find payload from given payloadHash: ${payloadHash}`
@@ -167,6 +160,24 @@ export async function handleCosmosToEvmCallContractCompleteEvent(
       );
       continue;
     }
+
+    if (process.env.CHAIN_ENV != 'devnet') {
+      logger.warn(
+        `[handleCosmosToEvmCallContractCompleteEvent]: Skipping mainnet broadcast payloadHash: ${payloadHash}`
+      );
+      return undefined
+    }
+
+    const skipContracts = (process.env.SKIP_CONTRACTS || '').split(',')
+    for (const skipContract of skipContracts) {
+      if (contractAddress.toLowerCase() === skipContract.toLowerCase()) {
+        logger.info(
+          `[handleCosmosToEvmCallContractCompleteEvent]: Skipping devnet contract ${skipContract} for testing, payloadHash: ${payloadHash}`
+        );
+        return undefined
+      }
+    }
+
 
     const tx = await evmClient.execute(
       contractAddress,
