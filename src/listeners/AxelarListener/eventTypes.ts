@@ -11,7 +11,7 @@ import { Parser } from './parser';
 export interface AxelarListenerEvent<T> {
   type: string;
   topicId: string;
-  parseEvent: (event: any) => Promise<T>;
+  parseEvent: (event: any) => Promise<T | Array<T>>;
 }
 
 const parser = new Parser(new DatabaseClient());
