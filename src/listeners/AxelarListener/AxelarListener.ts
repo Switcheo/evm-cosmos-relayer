@@ -61,6 +61,12 @@ export class AxelarListener {
       event
         .parseEvent(_event.result.events)
         .then((ev) => {
+          if (Array.isArray(ev)) {
+            // If ev is an array, loop through each element
+            ev.forEach((element) => {
+              subject.next(element);
+            });
+          }
           subject.next(ev);
         })
         .catch((e) => {

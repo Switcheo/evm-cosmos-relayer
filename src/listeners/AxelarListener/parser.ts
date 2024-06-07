@@ -22,21 +22,26 @@ export class Parser {
     this.db = db;
   }
 
-  parseEvmEventCompletedEvent = async (event: any): Promise<ExecuteRequest> => {
+  parseEvmEventCompletedEvent = async (event: any): Promise<Array<ExecuteRequest>> => {
     logger.info(`debug [parseEvmEventCompletedEvent] event: "${JSON.stringify(event)}"`);
-    const eventId = removeQuote(event['axelar.evm.v1beta1.EVMEventCompleted.event_id'][0]);
-    const errorMsg = `Not found eventId: ${eventId} in DB. Skip to handle an event.`;
+    const events = event['axelar.evm.v1beta1.EVMEventCompleted.event_id']
+    const executeRequests: Array<ExecuteRequest> = []
+    for (const evt in events) {
+      const eventId = removeQuote(evt);
+      const errorMsg = `Not found eventId: ${eventId} in DB. Skip to handle an event.`;
 
-    const payload = await this.db.findRelayDataById(eventId).then((data) => {
-      return data?.callContract?.payload || data?.callContractWithToken?.payload;
-    });
+      const payload = await this.db.findRelayDataById(eventId).then((data) => {
+        return data?.callContract?.payload || data?.callContractWithToken?.payload;
+      });
 
-    if (!payload) throw new Error(errorMsg);
-
-    return {
-      id: eventId,
-      payload,
-    };
+      if (!payload) throw new Error(errorMsg);
+      executeRequests.push({
+        id: eventId,
+        payload,
+      })
+    }
+    logger.info(`debug [parseEvmEventCompletedEvent] executeRequests: "${JSON.stringify(executeRequests)}"`);
+    return executeRequests;
   };
 
   parseContractCallSubmittedEvent = (event: any): Promise<IBCEvent<ContractCallSubmitted>> => {
