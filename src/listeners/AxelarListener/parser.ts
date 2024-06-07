@@ -6,6 +6,7 @@ import {
   IBCEvent,
   IBCPacketEvent,
 } from 'types';
+import { logger } from '../../logger';
 
 const decodeBase64 = (str: string) => {
   return Buffer.from(str, 'base64').toString('hex');
@@ -22,6 +23,7 @@ export class Parser {
   }
 
   parseEvmEventCompletedEvent = async (event: any): Promise<ExecuteRequest> => {
+    logger.info(`debug [parseEvmEventCompletedEvent] event: "${event}"`);
     const eventId = removeQuote(event['axelar.evm.v1beta1.EVMEventCompleted.event_id'][0]);
     const errorMsg = `Not found eventId: ${eventId} in DB. Skip to handle an event.`;
 
