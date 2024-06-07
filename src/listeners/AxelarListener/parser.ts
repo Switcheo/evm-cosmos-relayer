@@ -26,7 +26,7 @@ export class Parser {
     logger.info(`debug [parseEvmEventCompletedEvent] event: "${JSON.stringify(event)}"`);
     const events = event['axelar.evm.v1beta1.EVMEventCompleted.event_id']
     const executeRequests: Array<ExecuteRequest> = []
-    for (const evt in events) {
+    for (const evt of events) {
       const eventId = removeQuote(evt);
       const errorMsg = `Not found eventId: ${eventId} in DB. Skip to handle an event.`;
 
