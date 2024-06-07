@@ -66,8 +66,9 @@ export class AxelarListener {
             ev.forEach((element) => {
               subject.next(element);
             });
+          } else {
+            subject.next(ev);
           }
-          subject.next(ev);
         })
         .catch((e) => {
           logger.debug(`[AxelarListener] Failed to parse topic ${event.topicId} GMP event: ${e}`);
