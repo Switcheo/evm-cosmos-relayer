@@ -23,7 +23,7 @@ export class Parser {
   }
 
   parseEvmEventCompletedEvent = async (event: any): Promise<ExecuteRequest> => {
-    logger.info(`debug [parseEvmEventCompletedEvent] event: "${event}"`);
+    logger.info(`debug [parseEvmEventCompletedEvent] event: "${JSON.stringify(event)}"`);
     const eventId = removeQuote(event['axelar.evm.v1beta1.EVMEventCompleted.event_id'][0]);
     const errorMsg = `Not found eventId: ${eventId} in DB. Skip to handle an event.`;
 
