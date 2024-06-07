@@ -23,11 +23,11 @@ export class Parser {
   }
 
   parseEvmEventCompletedEvent = async (event: any): Promise<Array<ExecuteRequest>> => {
-    logger.info(`debug [parseEvmEventCompletedEvent] event: "${JSON.stringify(event)}"`);
     const events = event['axelar.evm.v1beta1.EVMEventCompleted.event_id']
     const executeRequests: Array<ExecuteRequest> = []
     for (const evt of events) {
       const eventId = removeQuote(evt);
+      logger.info(`[parseEvmEventCompletedEvent] found event: "${eventId}"`);
       const errorMsg = `Not found eventId: ${eventId} in DB. Skip to handle an event.`;
 
       const payload = await this.db.findRelayDataById(eventId).then((data) => {
@@ -40,7 +40,6 @@ export class Parser {
         payload,
       })
     }
-    logger.info(`debug [parseEvmEventCompletedEvent] executeRequests: "${JSON.stringify(executeRequests)}"`);
     return executeRequests;
   };
 
