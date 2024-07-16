@@ -1,4 +1,4 @@
-import { Wallet, utils, ethers } from 'ethers';
+import { Wallet, utils, ethers, BigNumber } from 'ethers'
 import { EvmNetworkConfig } from 'config';
 import {
   IAxelarGateway__factory,
@@ -157,13 +157,15 @@ export class EvmClient {
     if (retryAttempt >= this.maxRetry) throw new Error('Max retry exceeded');
     // Get the current gas price from the network
     const gasPrice = await this.wallet.getGasPrice();
+    const gasLimit = await this.wallet.estimateGas(tx)
 
+    const sendTxParams = {
+      ...tx,
+      gasPrice,
+      gasLimit: utils.hexValue(gasLimit.mul(BigNumber.from('2'))),
+    }
     return this.wallet
-      .sendTransaction({
-        ...tx,
-        gasPrice,
-        gasLimit: utils.hexValue(5000000),
-      })
+      .sendTransaction(sendTxParams)
       .then((t) => t.wait())
       .catch(async (e: any) => {
         logger.error(
