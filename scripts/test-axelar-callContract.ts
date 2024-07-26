@@ -1,6 +1,6 @@
 import { evmChains } from '../src/config'
 import { EvmClient } from '../src/clients'
-import { utils } from 'ethers'
+import { BigNumber, utils } from 'ethers'
 
 // usage example:
 // ts-node scripts/test-axelar-callContract.ts [from-chain] [to-chain] [to-address] [payload]
@@ -14,12 +14,14 @@ async function main() {
   console.log('chainStr: ', chainStr)
   console.log('addr: ', addr)
   console.log('payload: ', payload)
+  console.log('', )
 
   const chain = evmChains.filter((v) => v.id === fromChain)[0]
   const evmClient = new EvmClient(chain)
 
   // Get the current gas price from the network
   const gasPrice = await evmClient.wallet.getGasPrice();
+  // const gasLimit = await evmClient.wallet.estimateGas(tx)
 
   const payloadWithVersion = utils.solidityPack(
     ['uint32', 'bytes'],

@@ -25,6 +25,9 @@ The relayer has stored the cross-chain events in the database. It exposes an API
 
 The API documentation in available [here](https://evm-cosmos-relayer-testnet.herokuapp.com/documentation).
 
-## Examples
+## Run scripts
 
-Work in progress
+example:
+```bash
+ts-node scripts/test-axelar-callContract.ts mantle carbon swth1cnymmv74yff8llh2hlykx3wezcvmrmuqt44crd 0x0123
+``` 

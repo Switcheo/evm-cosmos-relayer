@@ -48,7 +48,8 @@ export class SignerClient {
 
   static async init(_config?: CosmosNetworkConfig) {
     const config = _config || axelarChain;
-    const environment = env.CHAIN_ENV === 'testnet' ? Environment.TESTNET : Environment.DEVNET
+    const environment = env.CHAIN_ENV === 'testnet' ? Environment.TESTNET :
+      (env.CHAIN_ENV === 'mainnet' ? Environment.MAINNET : Environment.DEVNET)
     const _queryClient = await AxelarQueryClient.initOrGetAxelarQueryClient({
       environment,
       axelarRpcUrl: config.rpcUrl,
