@@ -14,6 +14,7 @@ export class EvmListener {
   public chainId: string;
   public finalityBlocks: number;
   public cosmosChainNames: string[];
+  public axelarCarbonGateway: string;
 
   constructor(evm: EvmNetworkConfig, cosmosChainNames: string[]) {
     const provider = new ethers.providers.JsonRpcProvider(evm.rpcUrl);
@@ -21,6 +22,7 @@ export class EvmListener {
     this.chainId = evm.id;
     this.finalityBlocks = evm.finality;
     this.cosmosChainNames = cosmosChainNames;
+    this.axelarCarbonGateway = evm.axelarCarbonGateway;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -36,7 +38,7 @@ export class EvmListener {
     // update block number
     this.currentBlock = await this.gatewayContract.provider.getBlockNumber();
 
-    const eventFilter = event.getEventFilter(this.gatewayContract);
+    const eventFilter = event.getEventFilter(this.gatewayContract, this.axelarCarbonGateway);
     this.gatewayContract.on(eventFilter, async (...args) => {
       const ev: Event = args[args.length - 1];
 
