@@ -11,7 +11,7 @@ import {
 import {
   AxelarCosmosContractCallEvent,
   AxelarCosmosContractCallWithTokenEvent,
-  AxelarEVMCompletedEvent,
+  AxelarEVMEventCompletedEvent,
   AxelarIBCCompleteEvent,
   EvmContractCallApprovedEvent,
   EvmContractCallEvent,
@@ -48,7 +48,7 @@ const sCosmosContractCall = createCosmosEventSubject<ContractCallSubmitted>();
 const sCosmosContractCallWithToken = createCosmosEventSubject<ContractCallWithTokenSubmitted>();
 
 // Listening to the IBC packet event. This mean the any gmp flow (both contractCall and contractCallWithToken) from evm -> cosmos is completed.
-const sEvmConfirmEvent = new Subject<ExecuteRequest>();
+const sEVMEventCompleted = new Subject<ExecuteRequest>();
 const sCosmosApproveAny = new Subject<IBCPacketEvent>();
 
 // Initialize DB client
@@ -97,11 +97,11 @@ export async function startRelayer() {
         .catch((e) => handleAnyError(db, 'handleEvmToCosmosEvent', e));
     });
 
-  // Subscribe to the ContractCallWithToken event at the gateway contract (EVM -> Cosmos direction)
-  sEvmConfirmEvent.subscribe((executeParams) => {
+  // Subscribe to the EvmToCosmosConfirm event at the gateway contract (EVM -> Cosmos direction)
+  sEVMEventCompleted.subscribe((executeParams) => {
     prepareHandler(executeParams, db, 'handleEvmToCosmosConfirmEvent')
       // Send the execute tx to the axelar network
-      .then(() => handleEvmToCosmosConfirmEvent(axelarClient, executeParams))
+      .then(() => handleEvmToCosmosConfirmEvent(axelarClient, executeParams, cosmosChainNames))
       // Update the event status in the database
       .then(({ status, packetSequence }) =>
         db.updateEventStatusWithPacketSequence(executeParams.id, status, packetSequence)
@@ -197,5 +197,5 @@ export async function startRelayer() {
   axelarListener.listen(AxelarCosmosContractCallEvent, sCosmosContractCall);
   axelarListener.listen(AxelarCosmosContractCallWithTokenEvent, sCosmosContractCallWithToken);
   axelarListener.listen(AxelarIBCCompleteEvent, sCosmosApproveAny);
-  axelarListener.listen(AxelarEVMCompletedEvent, sEvmConfirmEvent);
+  axelarListener.listen(AxelarEVMEventCompletedEvent, sEVMEventCompleted);
 }
