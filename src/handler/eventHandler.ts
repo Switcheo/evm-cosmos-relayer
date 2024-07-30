@@ -28,10 +28,14 @@ const getBatchCommandIdFromSignTx = (signTx: any) => {
 
 export async function handleEvmToCosmosConfirmEvent(
   vxClient: AxelarClient,
-  executeParams: ExecuteRequest
+  executeParams: ExecuteRequest, cosmosChainNames: Array<string>
 ) {
-  const { id, payload } = executeParams;
+  const { id, payload, destinationChain } = executeParams;
   const [hash, logIndex] = id.split('-');
+
+  if (!cosmosChainNames.includes(destinationChain.toLowerCase())) {
+    throw new Error(`destination chain ${destinationChain} not found, probably not whitelisted`);
+  }
 
   const routeMessageTx = await vxClient.routeMessageRequest(parseInt(logIndex), hash, payload);
 

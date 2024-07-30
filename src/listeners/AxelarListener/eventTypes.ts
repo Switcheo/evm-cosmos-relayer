@@ -16,7 +16,7 @@ export interface AxelarListenerEvent<T> {
 
 const parser = new Parser(new DatabaseClient());
 
-export const AxelarEVMCompletedEvent: AxelarListenerEvent<ExecuteRequest> = {
+export const AxelarEVMEventCompletedEvent: AxelarListenerEvent<ExecuteRequest> = {
   type: 'axelar.evm.v1beta1.EVMEventCompleted',
   topicId:
     "tm.event='NewBlock' AND axelar.evm.v1beta1.EVMEventCompleted.event_id EXISTS",
@@ -27,7 +27,7 @@ export const AxelarCosmosContractCallEvent: AxelarListenerEvent<
   IBCEvent<ContractCallSubmitted>
 > = {
   type: 'axelar.axelarnet.v1beta1.ContractCallSubmitted',
-  topicId: `tm.event='Tx' AND axelar.axelarnet.v1beta1.ContractCallSubmitted.message_id EXISTS`,
+  topicId: `tm.event='Tx' AND axelar.axelarnet.v1beta1.ContractCallSubmitted.source_chain CONTAINS 'carbon'`,
   parseEvent: parser.parseContractCallSubmittedEvent,
 };
 
@@ -35,7 +35,7 @@ export const AxelarCosmosContractCallWithTokenEvent: AxelarListenerEvent<
   IBCEvent<ContractCallWithTokenSubmitted>
 > = {
   type: 'axelar.axelarnet.v1beta1.ContractCallWithTokenSubmitted',
-  topicId: `tm.event='Tx' AND axelar.axelarnet.v1beta1.ContractCallWithTokenSubmitted.message_id EXISTS`,
+  topicId: `tm.event='Tx' AND axelar.axelarnet.v1beta1.ContractCallWithTokenSubmitted.source_chain CONTAINS 'carbon'`,
   parseEvent: parser.parseContractCallWithTokenSubmittedEvent,
 };
 

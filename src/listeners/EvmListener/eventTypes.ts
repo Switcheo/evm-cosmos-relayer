@@ -17,7 +17,7 @@ import { TypedEvent, TypedEventFilter } from '../../types/contracts/common';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface EvmListenerEvent<EventObject, Event extends TypedEvent<any, EventObject>> {
   name: string; // use for logging purpose
-  getEventFilter: (gateway: IAxelarGateway) => TypedEventFilter<Event>;
+  getEventFilter: (gateway: IAxelarGateway, axelarCarbonGateway: string) => TypedEventFilter<Event>;
   isAcceptedChain: (allowedChainIds: string[], event: EventObject) => boolean;
   parseEvent: (
     currentChainName: string,
@@ -29,8 +29,8 @@ export interface EvmListenerEvent<EventObject, Event extends TypedEvent<any, Eve
 
 export const EvmContractCallEvent: EvmListenerEvent<ContractCallEventObject, ContractCallEvent> = {
   name: 'ContractCall',
-  getEventFilter: (gateway: IAxelarGateway) =>
-    gateway.filters['ContractCall(address,string,string,bytes32,bytes)'](),
+  getEventFilter: (gateway: IAxelarGateway, axelarCarbonGateway: string) =>
+    gateway.filters['ContractCall(address,string,string,bytes32,bytes)'](axelarCarbonGateway),
   isAcceptedChain: (allowedDestChainIds, event) =>
     allowedDestChainIds.includes(event.destinationChain.toLowerCase()),
   parseEvent: parseAnyEvent,
@@ -41,8 +41,8 @@ export const EvmContractCallWithTokenEvent: EvmListenerEvent<
   ContractCallWithTokenEvent
 > = {
   name: 'ContractCallWithToken',
-  getEventFilter: (gateway: IAxelarGateway) =>
-    gateway.filters['ContractCallWithToken(address,string,string,bytes32,bytes,string,uint256)'](),
+  getEventFilter: (gateway: IAxelarGateway, axelarCarbonGateway: string) =>
+    gateway.filters['ContractCallWithToken(address,string,string,bytes32,bytes,string,uint256)'](axelarCarbonGateway),
   isAcceptedChain: (allowedDestChainIds, event) =>
     allowedDestChainIds.includes(event.destinationChain.toLowerCase()),
   parseEvent: parseAnyEvent,
@@ -53,10 +53,10 @@ export const EvmContractCallApprovedEvent: EvmListenerEvent<
   ContractCallApprovedEvent
 > = {
   name: 'ContractCallApproved',
-  getEventFilter: (gateway: IAxelarGateway) =>
+  getEventFilter: (gateway: IAxelarGateway, axelarCarbonGateway: string) =>
     gateway.filters[
       'ContractCallApproved(bytes32,string,string,address,bytes32,bytes32,uint256)'
-    ](),
+    ](null, null, null, axelarCarbonGateway),
   isAcceptedChain: (allowedSrcChainIds, event) =>
     allowedSrcChainIds.includes(event.sourceChain.toLowerCase()),
   parseEvent: parseAnyEvent,
@@ -67,10 +67,10 @@ export const EvmContractCallWithTokenApprovedEvent: EvmListenerEvent<
   ContractCallApprovedWithMintEvent
 > = {
   name: 'ContractCallWithTokenApproved',
-  getEventFilter: (gateway: IAxelarGateway) =>
+  getEventFilter: (gateway: IAxelarGateway, axelarCarbonGateway: string) =>
     gateway.filters[
       'ContractCallApprovedWithMint(bytes32,string,string,address,bytes32,string,uint256,bytes32,uint256)'
-    ](),
+    ](null, null, null, axelarCarbonGateway),
   isAcceptedChain: (allowedSrcChainIds, event) =>
     allowedSrcChainIds.includes(event.sourceChain.toLowerCase()),
   parseEvent: parseAnyEvent,

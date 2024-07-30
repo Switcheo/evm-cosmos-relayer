@@ -6,7 +6,6 @@ import { TypedEvent } from '../../types/contracts/common';
 import { EvmEvent } from '../../types';
 import { Subject } from 'rxjs';
 import { logger } from '../../logger';
-import { env } from '../../config';
 
 export class EvmListener {
   private gatewayContract: IAxelarGateway;
@@ -14,6 +13,7 @@ export class EvmListener {
   public chainId: string;
   public finalityBlocks: number;
   public cosmosChainNames: string[];
+  public axelarCarbonGateway: string;
 
   constructor(evm: EvmNetworkConfig, cosmosChainNames: string[]) {
     const provider = new ethers.providers.JsonRpcProvider(evm.rpcUrl);
@@ -21,6 +21,7 @@ export class EvmListener {
     this.chainId = evm.id;
     this.finalityBlocks = evm.finality;
     this.cosmosChainNames = cosmosChainNames;
+    this.axelarCarbonGateway = evm.axelarCarbonGateway;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -36,12 +37,15 @@ export class EvmListener {
     // update block number
     this.currentBlock = await this.gatewayContract.provider.getBlockNumber();
 
-    const eventFilter = event.getEventFilter(this.gatewayContract);
+    const eventFilter = event.getEventFilter(this.gatewayContract, this.axelarCarbonGateway);
     this.gatewayContract.on(eventFilter, async (...args) => {
       const ev: Event = args[args.length - 1];
 
       if (ev.blockNumber <= this.currentBlock) return;
-      if (env.CHAIN_ENV === 'testnet' && !event.isAcceptedChain(this.cosmosChainNames, ev.args)) return;
+      if (!event.isAcceptedChain(this.cosmosChainNames, ev.args)) {
+        logger.silly(`not accepted chain: ${ev.args}, this.cosmosChainNames: ${this.cosmosChainNames}`);
+        return
+      };
 
       const evmEvent = await event.parseEvent(
         this.chainId,

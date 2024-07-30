@@ -30,13 +30,13 @@ export class Parser {
       logger.info(`[parseEvmEventCompletedEvent] found event: "${eventId}"`);
       const errorMsg = `Not found eventId: ${eventId} in DB. Skip to handle an event.`;
 
-      const payload = await this.db.findRelayDataById(eventId).then((data) => {
-        return data?.callContract?.payload || data?.callContractWithToken?.payload;
-      });
+      const data = await this.db.findRelayDataById(eventId);
+      const payload = data?.callContract?.payload || data?.callContractWithToken?.payload;
 
       if (!payload) throw new Error(errorMsg);
       executeRequests.push({
         id: eventId,
+        destinationChain: data.to,
         payload,
       })
     }

@@ -13,6 +13,7 @@ export interface EvmNetworkConfig {
   name: string,
   rpcUrl: string,
   gateway: string,
+  axelarCarbonGateway: string,
   finality: number,
   privateKey: string
 }

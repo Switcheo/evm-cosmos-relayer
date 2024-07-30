@@ -9,7 +9,7 @@ datasource db {
 
 model RelayData {
   id                    String                 @id @db.VarChar(255)
-  packetSequence        Int?                   @unique
+  packetSequence        Int?                   @default(0)
   executeHash           String?                @db.VarChar(255)
   status                Int                    @default(0)
   from                  String                 @db.VarChar(255)

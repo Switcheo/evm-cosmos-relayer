@@ -44,6 +44,7 @@ export interface PaginationParams {
 
 export interface ExecuteRequest {
   id: string;
+  destinationChain: string;
   payload: string;
 }
 
