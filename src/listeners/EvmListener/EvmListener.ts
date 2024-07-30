@@ -42,7 +42,10 @@ export class EvmListener {
       const ev: Event = args[args.length - 1];
 
       if (ev.blockNumber <= this.currentBlock) return;
-      if (!event.isAcceptedChain(this.cosmosChainNames, ev.args)) return;
+      if (!event.isAcceptedChain(this.cosmosChainNames, ev.args)) {
+        logger.silly(`not accepted chain: ${ev.args}, this.cosmosChainNames: ${this.cosmosChainNames}`);
+        return
+      };
 
       const evmEvent = await event.parseEvent(
         this.chainId,

@@ -2,7 +2,7 @@
   "chainId": "axelar",
   "denom": "uaxl",
   "gasPrice": "0.0125",
-  "rpcUrl": "http://localhost:26657",
-  "lcdUrl": "http://localhost:1317",
-  "ws": "ws://localhost:26657/websocket"
+  "rpcUrl": "http://35.213.150.61:26657",
+  "lcdUrl": "http://35.213.150.61:1317",
+  "ws": "ws://35.213.150.61:26657/websocket"
 }

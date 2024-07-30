@@ -3,7 +3,7 @@ import { AxelarClient, DatabaseClient } from '../src/clients'
 
 // usage example:
 // ts-node scripts/test-axelar-route-message.ts [tx_hash] [log_index] [payload]
-// ts-node scripts/test-axelar-route-message.ts mantle 0xdbeb0fdbdcfb1e5a21e6b20605002af52532b04d8aee5efae0744b9ca90a9352 0 0x0123
+// ts-node scripts/test-axelar-route-message.ts 0xdbeb0fdbdcfb1e5a21e6b20605002af52532b04d8aee5efae0744b9ca90a9352 0 0x0123
 async function main() {
   const tx_hash = process.argv[2]
   const log_index = process.argv[3]
