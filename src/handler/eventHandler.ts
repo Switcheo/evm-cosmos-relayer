@@ -1,4 +1,4 @@
-import { AxelarClient, DatabaseClient, EvmClient } from '..';
+import { AxelarClient, DatabaseClient, env, EvmClient } from '..'
 import { logger } from '../logger';
 import {
   ContractCallSubmitted,
@@ -120,6 +120,10 @@ export async function handleCosmosToEvmEvent<
 
   logger.info(`[handleCosmosToEvmEvent] BatchCommands: ${JSON.stringify(executeData)}`);
 
+  if (env.CHAIN_ENV === 'mainnet') {
+    logger.warn('[handleCosmosToEvmEvent] Skipping gatewayExecute for mainnet as axelar should do it');
+    return
+  }
   const tx = await evmClient.gatewayExecute(executeData);
   if (!tx) return;
   logger.info(`[handleCosmosToEvmEvent] Execute: ${tx.transactionHash}`);

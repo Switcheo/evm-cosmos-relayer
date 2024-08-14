@@ -1,13 +1,13 @@
-import { Subject, mergeMap } from 'rxjs';
+import { Subject, mergeMap, filter } from 'rxjs'
 import { AxelarClient, EvmClient, DatabaseClient } from '../clients';
 import { axelarChain, cosmosChains, evmChains } from '../config';
 import {
   ContractCallSubmitted,
   ContractCallWithTokenSubmitted,
   EvmEvent,
-  ExecuteRequest,
+  ExecuteRequest, IBCEvent,
   IBCPacketEvent,
-} from '../types';
+} from '../types'
 import {
   AxelarCosmosContractCallEvent,
   AxelarCosmosContractCallWithTokenEvent,
@@ -37,7 +37,7 @@ import {
   handleCosmosToEvmEvent,
 } from '../handler';
 import { createCosmosEventSubject, createEvmEventSubject } from './subject';
-import { filterCosmosDestination, mapEventToEvmClient } from './rxOperators';
+import { filterCosmosDestination, filterDestinationCarbonToEvm, filterDestinationEvmToCarbon, filterSourceChainOnEvm, mapEventToEvmClient } from './rxOperators'
 
 const sEvmCallContract = createEvmEventSubject<ContractCallEventObject>();
 const sEvmCallContractWithToken = createEvmEventSubject<ContractCallWithTokenEventObject>();
@@ -98,7 +98,9 @@ export async function startRelayer() {
     });
 
   // Subscribe to the EvmToCosmosConfirm event at the gateway contract (EVM -> Cosmos direction)
-  sEVMEventCompleted.subscribe((executeParams) => {
+  sEVMEventCompleted
+    .pipe(filterDestinationEvmToCarbon(cosmosChains))
+    .subscribe((executeParams) => {
     prepareHandler(executeParams, db, 'handleEvmToCosmosConfirmEvent')
       // Send the execute tx to the axelar network
       .then(() => handleEvmToCosmosConfirmEvent(axelarClient, executeParams, cosmosChainNames))
@@ -111,7 +113,8 @@ export async function startRelayer() {
   });
 
   // Subscribe to the IBCComplete event at the axelar network. (EVM -> Cosmos direction)
-  sCosmosApproveAny.subscribe((event) => {
+  sCosmosApproveAny
+    .subscribe((event) => {
     prepareHandler(event, db, 'handleEvmToCosmosCompleteEvent')
       // Just logging the event for now
       .then(() => handleEvmToCosmosCompleteEvent(axelarClient, event))
@@ -120,7 +123,9 @@ export async function startRelayer() {
   });
 
   // Subscribe to the ContractCall event at the axelar network. (Cosmos -> EVM direction)
-  sCosmosContractCall.subscribe((event) => {
+  sCosmosContractCall
+    .pipe(filterDestinationCarbonToEvm(evmChains))
+    .subscribe((event) => {
     prepareHandler(event, db, 'handleContractCallFromCosmosToEvmEvent')
       // Create the event in the database
       .then(() => db.createCosmosContractCallEvent(event))
@@ -133,10 +138,12 @@ export async function startRelayer() {
   });
 
   // Subscribe to the ContractCallWithToken event at the axelar network. (Cosmos -> EVM direction)
-  sCosmosContractCallWithToken.subscribe((event) => {
+  sCosmosContractCallWithToken
+    .pipe(filterDestinationCarbonToEvm(evmChains))
+    .subscribe((event) => {
     prepareHandler(event, db, 'handleContractCallWithTokenFromCosmosToEvmEvent')
       // Create the event in the database
-      .then(() => db.createCosmosContractCallWithTokenEvent(event))
+      .then(() => db.createCosmosContractCallWithTokenEvent(event as IBCEvent<ContractCallWithTokenSubmitted>))
       // Handle the event by sending a bunch of txs to axelar network
       .then(() => handleCosmosToEvmEvent(axelarClient, evmClients, event))
       // Update the event status in the database
@@ -147,6 +154,7 @@ export async function startRelayer() {
 
   // Subscribe to the ContractCallApprovedWithMint event at the gateway contract. (Cosmos -> EVM direction)
   sEvmApproveContractCallWithToken
+    .pipe(filterSourceChainOnEvm(cosmosChains))
     // Select the evm client that matches the event's chain
     .pipe(mergeMap((event) => mapEventToEvmClient(event, evmClients)))
     .subscribe(({ evmClient, event }) => {
@@ -168,6 +176,7 @@ export async function startRelayer() {
 
   // Subscribe to the ContractCallApproved event at the gateway contract. (Cosmos -> EVM direction)
   sEvmApproveContractCall
+    .pipe(filterSourceChainOnEvm(cosmosChains))
     // Select the evm client that matches the event's chain
     .pipe(mergeMap((event) => mapEventToEvmClient(event, evmClients)))
     .subscribe(({ event, evmClient }) => {
