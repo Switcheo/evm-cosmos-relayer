@@ -1,7 +1,6 @@
 import { filter, of, throwError } from 'rxjs';
 import { ContractCallSubmitted, ContractCallWithTokenSubmitted, EvmEvent, ExecuteRequest, IBCEvent, IBCPacketEvent } from '../types'
 import {
-  ContractCallApprovedEvent,
   ContractCallApprovedEventObject,
   ContractCallApprovedWithMintEventObject,
   ContractCallEventObject,
@@ -12,7 +11,7 @@ import { EvmClient } from '../clients';
 import { env } from '../config'
 
 export function filterCosmosDestination(cosmosChains: CosmosNetworkConfig[]) {
-  if (env.CHAIN_ENV === 'devnet')
+  if (env.CHAIN_ENV !== 'mainnet')
     return filter<EvmEvent<ContractCallWithTokenEventObject | ContractCallEventObject>>(() => true);
 
   return filter((event: EvmEvent<ContractCallWithTokenEventObject | ContractCallEventObject>) =>
@@ -21,7 +20,7 @@ export function filterCosmosDestination(cosmosChains: CosmosNetworkConfig[]) {
 }
 
 export function filterDestinationEvmToCarbon(cosmosChains: CosmosNetworkConfig[]) {
-  if (env.CHAIN_ENV === 'devnet')
+  if (env.CHAIN_ENV !== 'mainnet')
     return filter<ExecuteRequest>(() => true);
 
   return filter((event: ExecuteRequest) =>
@@ -30,7 +29,7 @@ export function filterDestinationEvmToCarbon(cosmosChains: CosmosNetworkConfig[]
 }
 
 export function filterDestinationCarbonToEvm(evmChains: EvmNetworkConfig[]) {
-  if (env.CHAIN_ENV === 'devnet')
+  if (env.CHAIN_ENV !== 'mainnet')
     return filter<IBCEvent<ContractCallSubmitted | ContractCallWithTokenSubmitted>>(() => true);
 
   return filter((event: IBCEvent<ContractCallSubmitted | ContractCallWithTokenSubmitted>) =>
@@ -39,7 +38,7 @@ export function filterDestinationCarbonToEvm(evmChains: EvmNetworkConfig[]) {
 }
 
 export function filterSourceChainOnEvm(cosmosChains: CosmosNetworkConfig[]) {
-  if (env.CHAIN_ENV === 'devnet')
+  if (env.CHAIN_ENV !== 'mainnet')
     return filter<EvmEvent<ContractCallApprovedEventObject | ContractCallApprovedWithMintEventObject>>(() => true);
 
   return filter((event: EvmEvent<ContractCallApprovedEventObject | ContractCallApprovedWithMintEventObject>) =>
