@@ -25,7 +25,6 @@ export function filterDestinationEvmToCarbon(cosmosChains: CosmosNetworkConfig[]
 
 
   return filter((event: ExecuteRequest) => {
-      console.log('debug: filterDestinationEvmToCarbon', cosmosChains, event);
       return cosmosChains.map((chain) => chain.chainId).includes(event.destinationChain)
     }
   );
