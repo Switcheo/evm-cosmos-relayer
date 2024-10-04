@@ -101,15 +101,15 @@ export async function startRelayer() {
   sEVMEventCompleted
     .pipe(filterDestinationEvmToCarbon(cosmosChains))
     .subscribe((executeParams) => {
-    prepareHandler(executeParams, db, 'handleEvmToCosmosConfirmEvent')
-      // Send the execute tx to the axelar network
-      .then(() => handleEvmToCosmosConfirmEvent(axelarClient, executeParams))
-      // Update the event status in the database
-      .then(({ status, packetSequence }) =>
-        db.updateEventStatusWithPacketSequence(executeParams.id, status, packetSequence)
-      )
-      // catch any error
-      .catch((e) => handleAnyError(db, 'handleEvmToCosmosConfirmEvent', e));
+      prepareHandler(executeParams, db, 'handleEvmToCosmosConfirmEvent')
+        // Send the execute tx to the axelar network
+        .then(() => handleEvmToCosmosConfirmEvent(axelarClient, executeParams))
+        // Update the event status in the database
+        .then(({ status, packetSequence }) =>
+          db.updateEventStatusWithPacketSequence(executeParams.id, status, packetSequence)
+        )
+        // catch any error
+        .catch((e) => handleAnyError(db, 'handleEvmToCosmosConfirmEvent', e));
   });
 
   // Subscribe to the IBCComplete event at the axelar network. (EVM -> Cosmos direction)

@@ -27,7 +27,7 @@ export class Parser {
     const executeRequests: Array<ExecuteRequest> = []
     for (const evt of events) {
       const eventId = removeQuote(evt);
-      logger.debug(`[parseEvmEventCompletedEvent] found event: "${eventId}"`);
+      logger.info(`[parseEvmEventCompletedEvent] found event: "${eventId}"`);
       const errorMsg = `Not found eventId: ${eventId} in DB. Skip to handle an event.`;
 
       const data = await this.db.findRelayDataById(eventId);
