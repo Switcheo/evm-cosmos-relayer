@@ -23,8 +23,11 @@ export function filterDestinationEvmToCarbon(cosmosChains: CosmosNetworkConfig[]
   if (env.CHAIN_ENV !== 'mainnet')
     return filter<ExecuteRequest>(() => true);
 
-  return filter((event: ExecuteRequest) =>
-    cosmosChains.map((chain) => chain.chainId).includes(event.destinationChain)
+
+  return filter((event: ExecuteRequest) => {
+      console.log('debug: filterDestinationEvmToCarbon', cosmosChains, event);
+      return cosmosChains.map((chain) => chain.chainId).includes(event.destinationChain)
+    }
   );
 }
 
