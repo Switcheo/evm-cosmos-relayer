@@ -103,7 +103,7 @@ export async function startRelayer() {
     .subscribe((executeParams) => {
     prepareHandler(executeParams, db, 'handleEvmToCosmosConfirmEvent')
       // Send the execute tx to the axelar network
-      .then(() => handleEvmToCosmosConfirmEvent(axelarClient, executeParams, cosmosChainNames))
+      .then(() => handleEvmToCosmosConfirmEvent(axelarClient, executeParams))
       // Update the event status in the database
       .then(({ status, packetSequence }) =>
         db.updateEventStatusWithPacketSequence(executeParams.id, status, packetSequence)
