@@ -19,7 +19,7 @@ const parser = new Parser(new DatabaseClient());
 export const AxelarEVMEventCompletedEvent: AxelarListenerEvent<ExecuteRequest> = {
   type: 'axelar.evm.v1beta1.EVMEventCompleted',
   topicId:
-    "tm.event='NewBlock' AND axelar.evm.v1beta1.EVMEventCompleted.event_id EXISTS",
+    "tm.event='Tx' AND axelar.evm.v1beta1.EVMEventCompleted.event_id EXISTS",
   parseEvent: parser.parseEvmEventCompletedEvent,
 };
 
