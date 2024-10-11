@@ -35,7 +35,11 @@ export function filterDestinationCarbonToEvm(evmChains: EvmNetworkConfig[]) {
     return filter<IBCEvent<ContractCallSubmitted | ContractCallWithTokenSubmitted>>(() => true);
 
   return filter((event: IBCEvent<ContractCallSubmitted | ContractCallWithTokenSubmitted>) =>
-    evmChains.some((chain) => chain.id === event.args.destinationChain && chain.axelarCarbonGateway === event.args.contractAddress)
+    {
+      console.log("Debug: event:", event);
+      console.log("Debug:", event.args);
+      return evmChains.some((chain) => chain.id === event.args.destinationChain && chain.axelarCarbonGateway.toLowerCase() === event.args.contractAddress.toLowerCase())
+    }
   );
 }
 
