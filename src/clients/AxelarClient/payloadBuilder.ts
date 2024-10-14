@@ -4,7 +4,7 @@ import {
   SignCommandsRequest as EvmSignCommandsRequest,
 } from '@axelar-network/axelarjs-types/axelar/evm/v1beta1/tx';
 import {
-  ExecuteMessageRequest,
+  RouteMessageRequest,
   protobufPackage as AxelarProtobufPackage,
 } from '@axelar-network/axelarjs-types/axelar/axelarnet/v1beta1/tx';
 import { toAccAddress } from '@cosmjs/stargate/build/queryclient/utils';
@@ -40,7 +40,7 @@ export function getRouteMessageRequest(
   return [
     {
       typeUrl: `/${AxelarProtobufPackage}.RouteMessageRequest`,
-      value: ExecuteMessageRequest.fromPartial({
+      value: RouteMessageRequest.fromPartial({
         sender: toAccAddress(sender),
         payload: fromHex(payload.slice(2)),
         id: logIndex === -1 ? `${txHash}` : `${txHash}-${logIndex}`,

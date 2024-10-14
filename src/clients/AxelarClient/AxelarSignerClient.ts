@@ -4,7 +4,6 @@ import { EncodeObject } from '@cosmjs/proto-signing';
 import { StdFee } from '@cosmjs/stargate';
 import { GasPrice } from '@cosmjs/stargate';
 import { DeliverTxResponse } from '@cosmjs/stargate';
-import { MsgTransfer } from '@axelar-network/axelarjs-types/ibc/applications/transfer/v1/tx';
 import {
   AxelarQueryClient,
   AxelarQueryClientType,
@@ -12,7 +11,7 @@ import {
 import { sleep } from '../sleep';
 import { Registry } from '@cosmjs/proto-signing';
 import {
-  ExecuteMessageRequest,
+  RouteMessageRequest,
   protobufPackage as AxelarProtobufPackage,
 } from '@axelar-network/axelarjs-types/axelar/axelarnet/v1beta1/tx';
 import { logger } from '../../logger';
@@ -39,7 +38,7 @@ export class SignerClient {
     this.maxRetries = _maxRetries;
     this.retryDelay = _retryDelay;
     this.fee = 'auto';
-    sdk.registry.register(`/${AxelarProtobufPackage}.RouteMessageRequest`, ExecuteMessageRequest);
+    sdk.registry.register(`/${AxelarProtobufPackage}.RouteMessageRequest`, RouteMessageRequest);
     // this.fee = {
     //   gas: '20000000', // 20M
     //   amount: [{ denom: config.denom, amount: config.gasPrice }],
@@ -55,7 +54,6 @@ export class SignerClient {
       axelarRpcUrl: config.rpcUrl,
     });
     const registry = new Registry();
-    registry.register('/ibc.applications.transfer.v1.MsgTransfer', MsgTransfer);
     const sdk = await AxelarSigningClient.initOrGetAxelarSigningClient({
       environment,
       axelarRpcUrl: config.rpcUrl,
