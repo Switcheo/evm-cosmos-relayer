@@ -7,6 +7,7 @@ import {
   IBCPacketEvent,
 } from '../../types';
 import { Parser } from './parser';
+import { env } from 'config'
 
 export interface AxelarListenerEvent<T> {
   type: string;
@@ -19,7 +20,9 @@ const parser = new Parser(new DatabaseClient());
 export const AxelarEVMEventCompletedEvent: AxelarListenerEvent<ExecuteRequest> = {
   type: 'axelar.evm.v1beta1.EVMEventCompleted',
   topicId:
-    "tm.event='Tx' AND axelar.evm.v1beta1.EVMEventCompleted.event_id EXISTS",
+    env.CHAIN_ENV !== 'mainnet' ?
+    "tm.event='Tx' AND axelar.evm.v1beta1.EVMEventCompleted.event_id EXISTS" :
+      "tm.event='NewBlock' AND axelar.evm.v1beta1.EVMEventCompleted.event_id EXISTS",
   parseEvent: parser.parseEvmEventCompletedEvent,
 };
 
