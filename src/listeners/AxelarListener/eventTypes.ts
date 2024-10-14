@@ -7,7 +7,7 @@ import {
   IBCPacketEvent,
 } from '../../types';
 import { Parser } from './parser';
-import { env } from 'config'
+import { env } from '../../config'
 
 export interface AxelarListenerEvent<T> {
   type: string;
