@@ -79,8 +79,9 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
       // try to route message
       const bridgingEvent = relay.events.find((event) => event.name === EventName.EVMEventConfirmed)
       if (!bridgingEvent) throw new Error("bridgingEvent not found")
-      console.log(`Number(bridgingEvent.tx_index): ${Number(bridgingEvent.tx_index)}, bridgingEvent.tx_hash: ${bridgingEvent.tx_hash} bridgingEvent.event_params.payload: ${bridgingEvent.event_params.payload}`)
-      const tx = await axelarClient.routeMessageRequest(Number(bridgingEvent.tx_index), bridgingEvent.tx_hash, bridgingEvent.event_params.payload)
+      const contractCallEvent = relay.events.find((event) => event.name === EventName.ContractCall)
+      if (!contractCallEvent) throw new Error("contractCallEvent not found")
+      const tx = await axelarClient.routeMessageRequest(Number(bridgingEvent.tx_index), bridgingEvent.tx_hash, contractCallEvent.event_params.payload)
       if (tx) {
         console.log(`Confirmed: ${tx.transactionHash}`)
       }
