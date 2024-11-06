@@ -9,11 +9,13 @@ export const startCron = async () => {
   // run every 15 minutes
   cron.schedule('*/3 * * * * *', async () => {
     console.debug('running minute cron')
-    await fixInTransitFromHydrogen()
+    // filter for relays that are stuck for at least 3 hours
+    const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000)
+    await fixInTransitFromHydrogen(threeHoursAgo)
   })
 }
 
-export async function fixInTransitFromHydrogen() {
+export async function fixInTransitFromHydrogen(thresholdTime: Date) {
   const hydrogenClient = new HydrogenClient(env.HYDROGEN_URL)
   // if (env.CHAIN_ENV !== 'mainnet') return
   // find axelar, in_transit relays
@@ -22,9 +24,7 @@ export async function fixInTransitFromHydrogen() {
     console.debug('No events in transit')
     return
   }
-  // filter for relays that are stuck for at least 3 hours
-  const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000)
-  const stuckRelays = inTransitRelays.filter(relay => new Date(relay.created_at) < threeHoursAgo)
+  const stuckRelays = inTransitRelays.filter(relay => new Date(relay.created_at) < thresholdTime)
 
   console.log(`Found ${stuckRelays.length} stuck relays`)
   for (const relay of stuckRelays) {

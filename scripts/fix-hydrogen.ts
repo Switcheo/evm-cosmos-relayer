@@ -6,7 +6,7 @@ import { fixInTransitFromHydrogen } from '../src/cron'
 async function main() {
   console.log('running fix-stuck-relays with hydrogen URL: ', env.HYDROGEN_URL)
 
-  await fixInTransitFromHydrogen()
+  await fixInTransitFromHydrogen(new Date())
 }
 
 (async () => {
