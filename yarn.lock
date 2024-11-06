@@ -2358,6 +2358,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/node-cron@npm:^3":
+  version: 3.0.11
+  resolution: "@types/node-cron@npm:3.0.11"
+  checksum: 10c0/21cd0255988da2935bc8bf010da8b31624911ec10ef5d9a96a59c57193f60b27c1749b2e27c2a292a697d00195da5b8848a707345bb276abc39c96287ee82005
+  languageName: node
+  linkType: hard
+
 "@types/node-fetch@npm:2.x":
   version: 2.6.2
   resolution: "@types/node-fetch@npm:2.6.2"
@@ -4024,6 +4031,7 @@ __metadata:
     "@types/hapi__joi": "npm:^17.1.9"
     "@types/hapi__vision": "npm:^5.5.4"
     "@types/jest": "npm:^29.2.4"
+    "@types/node-cron": "npm:^3"
     "@types/node-fetch": "npm:2.x"
     "@typescript-eslint/eslint-plugin": "npm:^5.46.1"
     "@typescript-eslint/parser": "npm:^5.46.1"
@@ -4036,6 +4044,7 @@ __metadata:
     isomorphic-ws: "npm:^5.0.0"
     jest: "npm:^29.3.1"
     joi: "npm:^17.7.0"
+    node-cron: "npm:^3.0.3"
     node-fetch: "npm:2.x"
     nodemon: "npm:^2.0.20"
     pm2: "npm:^5.2.2"
@@ -6160,6 +6169,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"node-cron@npm:^3.0.3":
+  version: 3.0.3
+  resolution: "node-cron@npm:3.0.3"
+  dependencies:
+    uuid: "npm:8.3.2"
+  checksum: 10c0/e6e817c5bf28cca69f256ecc1a2cb737cf895cb0fe22f8ec58ce614cb74dcc22e93f495984a26ece51322473238ccc0ef53b4f373035697017b8c28bddacb9b9
+  languageName: node
+  linkType: hard
+
 "node-fetch@npm:2.6.7":
   version: 2.6.7
   resolution: "node-fetch@npm:2.6.7"
@@ -8011,21 +8029,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"uuid@npm:8.3.2, uuid@npm:^8.3.2":
+  version: 8.3.2
+  resolution: "uuid@npm:8.3.2"
+  bin:
+    uuid: dist/bin/uuid
+  checksum: 10c0/bcbb807a917d374a49f475fae2e87fdca7da5e5530820ef53f65ba1d12131bd81a92ecf259cc7ce317cbe0f289e7d79fdfebcef9bfa3087c8c8a2fa304c9be54
+  languageName: node
+  linkType: hard
+
 "uuid@npm:^3.2.1":
   version: 3.4.0
   resolution: "uuid@npm:3.4.0"
   bin:
     uuid: ./bin/uuid
   checksum: 10c0/1c13950df865c4f506ebfe0a24023571fa80edf2e62364297a537c80af09c618299797bbf2dbac6b1f8ae5ad182ba474b89db61e0e85839683991f7e08795347
-  languageName: node
-  linkType: hard
-
-"uuid@npm:^8.3.2":
-  version: 8.3.2
-  resolution: "uuid@npm:8.3.2"
-  bin:
-    uuid: dist/bin/uuid
-  checksum: 10c0/bcbb807a917d374a49f475fae2e87fdca7da5e5530820ef53f65ba1d12131bd81a92ecf259cc7ce317cbe0f289e7d79fdfebcef9bfa3087c8c8a2fa304c9be54
   languageName: node
   linkType: hard
 

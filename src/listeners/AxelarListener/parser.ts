@@ -8,11 +8,11 @@ import {
 } from 'types';
 import { logger } from '../../logger';
 
-const decodeBase64 = (str: string) => {
+export const decodeBase64 = (str: string) => {
   return Buffer.from(str, 'base64').toString('hex');
 };
 
-const removeQuote = (str: string) => {
+export const removeQuote = (str: string) => {
   return str.replace(/['"]+/g, '');
 };
 
