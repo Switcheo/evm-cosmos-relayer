@@ -77,11 +77,9 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
 
       // Handle case 2: tx wasn't routed or failed (ibc timeout)
       // try to route message
-      const bridgingEvent = relay.events.find((event) => event.name === EventName.EVMEventConfirmed)
-      if (!bridgingEvent) throw new Error("bridgingEvent not found")
       const contractCallEvent = relay.events.find((event) => event.name === EventName.ContractCall)
       if (!contractCallEvent) throw new Error("contractCallEvent not found")
-      const tx = await axelarClient.routeMessageRequest(Number(bridgingEvent.tx_index), bridgingEvent.tx_hash, contractCallEvent.event_params.payload)
+      const tx = await axelarClient.routeMessageRequest(Number(contractCallEvent.tx_index), contractCallEvent.tx_hash, contractCallEvent.event_params.payload)
       if (tx) {
         console.log(`Confirmed: ${tx.transactionHash}`)
       }
