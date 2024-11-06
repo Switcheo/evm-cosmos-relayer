@@ -39,8 +39,11 @@ export async function fixInTransitFromHydrogen(thresholdTime: Date) {
   }
 }
 
-export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClient, hydrogenClient: HydrogenClient, relay: RelayData) {
-  const { chain_id } = getBridgeIdAndChainIdFromConnectionId(relay.connection_id)
+export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClient, hydrogenClient: HydrogenClient, relayData: RelayData) {
+  const { chain_id } = getBridgeIdAndChainIdFromConnectionId(relayData.connection_id)
+  console.log(`Fixing relay id: ${relayData.id} for ${relayData.connection_id}`)
+  // find the relay details with its corresponding events/payloads first
+  const relay = await hydrogenClient.getRelayWithDetails(relayData.id)
   if (relay.flow_type === 'in') {
     // ** INBOUND ** //
     // Handle no bridging tx
@@ -74,7 +77,8 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
 
       // Handle case 2: tx wasn't routed or failed (ibc timeout)
       // try to route message
-      const bridgingEvent = await hydrogenClient.getEventByTxHashAndIndex(relay.bridging_tx_hash, relay.bridging_event_index!)
+      const bridgingEvent = relay.events.find((event) => event.name === EventName.EVMEventConfirmed)
+      if (!bridgingEvent) throw new Error("bridgingEvent not found")
       const tx = await axelarClient.routeMessageRequest(Number(bridgingEvent.tx_index), bridgingEvent.tx_hash, bridgingEvent.event_params.payload)
       if (tx) {
         console.log(`Confirmed: ${tx.transactionHash}`)
@@ -82,8 +86,6 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
     }
   } else {
     // ** OUTBOUND ** //
-    // find the relay details with its corresponding events/payloads first
-    const relayWithDetails = await hydrogenClient.getRelayWithDetails(relay.id)
 
     // Handle no bridging tx
     if (relay.bridging_tx_hash === null) {
@@ -111,7 +113,7 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
       6) tx wasn't executed on EVM (have ContractCallApproved but no ContractCallExecuted)
        */
 
-      const events = relayWithDetails.events.map((relayEvent) => relayEvent.name)
+      const events = relay.events.map((relayEvent) => relayEvent.name)
 
       // TODO: Handle case 1
       // TODO: allow hydrogen to support syncing?
@@ -169,7 +171,7 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
       // how to check if it's routing issue?
       // - get ContractCallSubmitted event from hydrogen, which contains message id
       // - route message
-      const contractCallSubmittedEvent = relayWithDetails.events.find((event) => event.name === EventName.ContractCallSubmitted)
+      const contractCallSubmittedEvent = relay.events.find((event) => event.name === EventName.ContractCallSubmitted)
       if (!contractCallSubmittedEvent) throw new Error("contractCallSubmittedEvent not found")
       const routeMessage = await axelarClient.routeMessageRequest(
         -1,
