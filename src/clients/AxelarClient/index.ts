@@ -34,6 +34,14 @@ export class AxelarClient {
     });
   }
 
+  public getMessage(id: string) {
+    return this.signingClient.queryClient.nexus
+      .Message({
+        id,
+      })
+      .then((result) => result.message);
+  }
+
   public getPendingCommands(chain: string) {
     return this.signingClient.queryClient.evm
       .PendingCommands({

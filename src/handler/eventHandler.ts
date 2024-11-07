@@ -16,7 +16,7 @@ import {
   ContractCallEventObject,
 } from '../types/contracts/IAxelarGateway';
 
-const getBatchCommandIdFromSignTx = (signTx: any) => {
+export const getBatchCommandIdFromSignTx = (signTx: any) => {
   const rawLog = JSON.parse(signTx.rawLog || '{}');
   const events = rawLog[0].events;
   const signEvent = events.find((event: { type: string }) => event.type === 'sign');

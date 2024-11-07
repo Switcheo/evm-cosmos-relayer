@@ -11,7 +11,8 @@ export const env = {
   PORT: process.env.PORT || 3000,
   DD_API_KEY: process.env.DD_API_KEY || '',
   CHAIN_ENV: process.env.CHAIN_ENV || 'testnet',
-  LOG_LEVEL: process.env.LOG_LEVEL || "info"
+  LOG_LEVEL: process.env.LOG_LEVEL || "info",
+  HYDROGEN_URL: process.env.HYDROGEN_URL || "https://hydrogen-api.carbon.network",
 };
 
 export * from './chains';
