@@ -26,7 +26,7 @@ export async function fixInTransitFromHydrogen(thresholdTime: Date) {
   }
   const stuckRelays = inTransitRelays.filter(relay => new Date(relay.created_at) < thresholdTime)
 
-  console.log(`Found ${stuckRelays.length} stuck relays`)
+  logger.info(`Found ${stuckRelays.length} stuck relays`)
   for (const relay of stuckRelays) {
     try {
       const db = new DatabaseClient()
@@ -41,7 +41,7 @@ export async function fixInTransitFromHydrogen(thresholdTime: Date) {
 
 export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClient, hydrogenClient: HydrogenClient, relayData: RelayData) {
   const { chain_id } = getBridgeIdAndChainIdFromConnectionId(relayData.connection_id)
-  console.log(`Fixing relay id: ${relayData.id} for ${relayData.connection_id}`)
+  logger.info(`Fixing relay id: ${relayData.id} for ${relayData.connection_id}`)
   // find the relay details with its corresponding events/payloads first
   const relay = await hydrogenClient.getRelayWithDetails(relayData.id)
   if (relay.flow_type === 'in') {
@@ -61,7 +61,7 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
       // try to confirm tx
       const confirmTx = await axelarClient.confirmEvmTx(chain_id, relay.source_tx_hash)
       if (confirmTx) {
-        console.log(`fixStuckRelay: confirmed: ${confirmTx.transactionHash}`)
+        logger.info(`fixStuckRelay: confirmed: ${confirmTx.transactionHash}`)
       }
     }
     // Handle no destination tx
@@ -81,7 +81,7 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
       if (!contractCallEvent) throw new Error("contractCallEvent not found")
       const tx = await axelarClient.routeMessageRequest(Number(contractCallEvent.tx_index), contractCallEvent.tx_hash, contractCallEvent.event_params.payload)
       if (tx) {
-        console.log(`Confirmed: ${tx.transactionHash}`)
+        logger.info(`Confirmed: ${tx.transactionHash}`)
       }
     }
   } else {
@@ -148,7 +148,7 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
 
         if (message.status === 1) {
           // Handle case 2: tx wasn't routed
-          console.log('Handle case 2: tx wasn\'t routed or failed on Axelar (message status: STATUS_APPROVED)')
+          logger.info('Handle case 2: tx wasn\'t routed or failed on Axelar (message status: STATUS_APPROVED)')
           // route message first
           const routeMessage = await axelarClient.routeMessageRequest(
             -1,
@@ -184,10 +184,10 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
           const pendingCommand = pendingCommands.find((command) => command.params.sourceTxHash === hash && command.params.sourceEventIndex === logIndex)
           if (pendingCommand) {
             // Handle case 3: evm command wasn't signed on Axelar
-            console.log('Handle case 3: evm command wasn\'t signed on Axelar (already routed, in pending command)')
+            logger.info('Handle case 3: evm command wasn\'t signed on Axelar (already routed, in pending command)')
             // - sign command
             const signCommand = await axelarClient.signCommands(chain_id)
-            logger.debug(`[handleCosmosToEvmEvent] SignCommand: ${JSON.stringify(signCommand)}`)
+            logger.info(`[handleCosmosToEvmEvent] SignCommand: ${JSON.stringify(signCommand)}`)
 
             if (signCommand && signCommand.rawLog?.includes('failed')) {
               throw new Error(signCommand.rawLog)
@@ -198,9 +198,9 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
           } else {
             // TODO: either batched already or batched but didn't send
             // Handle case 4: evm command wasn't batched on Axelar
-            console.log('Handle case 4: evm command wasn\'t batched on Axelar (signed but not approved on evm)')
+            logger.info('Handle case 4: evm command wasn\'t batched on Axelar (signed but not approved on evm)')
             // Handle case 5: tx was batched but wasn't sent to EVM (no ContractCallApproved)
-            console.log('Handle case 5: tx was batched but wasn\'t sent to EVM (signed but not approved on evm)')
+            logger.info('Handle case 5: tx was batched but wasn\'t sent to EVM (signed but not approved on evm)')
             // TODO: alert, ContractCallApproved wasn't approved on EVM chain x. For some reason axelar did not send the batched tx. Please investigate.
           }
 
