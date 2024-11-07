@@ -5,5 +5,5 @@ import { startCron } from "./cron";
 
 logger.info('Starting relayer api server...');
 startAPIServer();
-// startRelayer();
-// startCron();
+startRelayer();
+startCron();

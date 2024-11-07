@@ -2,7 +2,6 @@ import cron from 'node-cron'
 import { axelarChain, env } from '../config'
 import { AxelarClient, DatabaseClient, EventName, HydrogenClient, RelayData } from '../clients'
 import { logger } from '../logger'
-import { getBatchCommandIdFromSignTx } from '../handler'
 import { decodeBase64, removeQuote } from '../listeners/AxelarListener/parser'
 
 export const startCron = async () => {
