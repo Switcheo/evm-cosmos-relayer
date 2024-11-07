@@ -93,12 +93,16 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
       /* possible scenarios:
       1) Hydrogen didn't sync the axelar.axelarnet.v1beta1.ContractCallSubmitted on axelar
       2) PendingAction not sent and somehow also not expired by carbon_axelar_execute_relayer (PendingAction should expire within 10 minutes)
+      3) PendingAction sent but not relayed by IBC (have BridgeSentEvent, ModuleAxelarCallContractEvent)
        */
 
       // TODO: Handle case 1
       // TODO: allow hydrogen to support syncing?
 
       // Handle case 2: PendingAction not sent and somehow also not expired by carbon_axelar_execute_relayer (PendingAction should expire within 10 minutes)
+      // TODO: alert hydrogen chat
+
+      // Handle case 3: PendingAction sent but not relayed by IBC (have BridgeSentEvent, ModuleAxelarCallContractEvent)
       // TODO: alert hydrogen chat
     }
     // Handle no destination tx
@@ -107,81 +111,99 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
       /* possible scenarios:
       1) Hydrogen didn't sync the ContractCallExecuted on EVM
       2) tx wasn't routed or failed on Axelar
-      3) evm command wasn't signed on Axelar
+      3) evm command wasn't signed on Axelar  (message status: STATUS_APPROVED)
       4) evm command wasn't batched on Axelar
       5) tx was batched and but wasn't sent to EVM (no ContractCallApproved)
       6) tx wasn't executed on EVM (have ContractCallApproved but no ContractCallExecuted)
        */
 
-      const events = relay.events.map((relayEvent) => relayEvent.name)
+      const eventNames = relay.events.map((relayEvent) => relayEvent.name)
 
       // TODO: Handle case 1
       // TODO: allow hydrogen to support syncing?
 
       // Handle case 6: tx wasn't executed on EVM (have ContractCallApproved but no ContractCallExecuted)
-      if (events.includes('ContractCallApproved')) {
+      if (eventNames.includes(EventName.ContractCallApproved)) {
         // TODO: alert, ContractCall wasn't executed on EVM chain x. Either the carbon_axelar_execute_relayer ran out of funds or is not working properly.
         return
       }
 
-      // Handle case 5: tx was batched and but wasn't sent to EVM (no ContractCallApproved)
-      if (events.includes('ContractCallApproved')) {
+      const contractCallSubmittedEvent = relay.events.find((event) => event.name === EventName.ContractCallSubmitted)
+      if (!contractCallSubmittedEvent) throw new Error("contractCallSubmittedEvent not found")
+      const messageId = removeQuote(contractCallSubmittedEvent.event_params.message_id)
+
+      if (!eventNames.includes(EventName.ContractCallApproved) &&
+        eventNames.includes(EventName.ContractCallSubmitted)
+      ) {
+        const message = await axelarClient.getMessage(messageId)
+        if (!message) throw new Error("message was not found on axelar")
+        // reference: export declare enum GeneralMessage_Status {
+        //     STATUS_UNSPECIFIED = 0,
+        //     STATUS_APPROVED = 1,
+        //     STATUS_PROCESSING = 2,
+        //     STATUS_EXECUTED = 3,
+        //     STATUS_FAILED = 4,
+        //     UNRECOGNIZED = -1
+        // }
+
+        // Handle case 2: tx wasn't routed or failed on Axelar
+        if (message.status === 1) {
+          console.log('Handle case 3: evm command wasn\'t signed on Axelar  (message status: STATUS_APPROVED)')
+          // route message first
+          const routeMessage = await axelarClient.routeMessageRequest(
+            -1,
+            messageId,
+            `0x${decodeBase64(removeQuote(contractCallSubmittedEvent.event_params.payload))}`,
+          )
+
+          if (routeMessage) {
+            logger.info(`[handleCosmosToEvmEvent] RouteMessage: ${routeMessage.transactionHash}`)
+          }
+
+          const pendingCommands = await axelarClient.getPendingCommands(chain_id)
+
+          logger.info(`[handleCosmosToEvmEvent] PendingCommands: ${JSON.stringify(pendingCommands)}`)
+          if (pendingCommands.length === 0) return
+
+          // - sign command
+          const signCommand = await axelarClient.signCommands(chain_id)
+          logger.debug(`[handleCosmosToEvmEvent] SignCommand: ${JSON.stringify(signCommand)}`)
+
+          if (signCommand && signCommand.rawLog?.includes('failed')) {
+            throw new Error(signCommand.rawLog)
+          }
+          if (!signCommand) {
+            throw new Error('cannot sign command')
+          }
+
+          // batch command
+          const batchedCommandId = getBatchCommandIdFromSignTx(signCommand)
+          logger.info(`[handleCosmosToEvmEvent] BatchCommandId: ${batchedCommandId}`)
+
+          // execute command on evm
+          // const executeData = await axelarClient.getExecuteDataFromBatchCommands(
+          //   chain_id,
+          //   batchedCommandId
+          // )
+          //
+          // logger.info(`[handleCosmosToEvmEvent] BatchCommands: ${JSON.stringify(executeData)}`)
+        }
+
+        // Handle case 3: evm command wasn't signed on Axelar
+
+
+
+        // Handle case 4: evm command wasn't batched on Axelar
+
+        // Handle case 5: tx was batched but wasn't sent to EVM (no ContractCallApproved)
         // TODO: alert, ContractCallApproved wasn't approved on EVM chain x. For some reason axelar did not send the batched tx. Please investigate.
       }
 
-
-
-      // Handle case 4: evm command wasn't batched on Axelar
       // TODO: implement
 
 
-      // Handle case 3: evm command wasn't signed on Axelar
-      // - get pending commands
-      const pendingCommands = await axelarClient.getPendingCommands(chain_id)
-
-      logger.info(`[handleCosmosToEvmEvent] PendingCommands: ${JSON.stringify(pendingCommands)}`)
-      if (pendingCommands.length === 0) return
-
-      // - sign command
-      const signCommand = await axelarClient.signCommands(chain_id)
-      logger.debug(`[handleCosmosToEvmEvent] SignCommand: ${JSON.stringify(signCommand)}`)
-
-      if (signCommand && signCommand.rawLog?.includes('failed')) {
-        throw new Error(signCommand.rawLog)
-      }
-      if (!signCommand) {
-        throw new Error('cannot sign command')
-      }
-
-      // batch command
-      const batchedCommandId = getBatchCommandIdFromSignTx(signCommand)
-      logger.info(`[handleCosmosToEvmEvent] BatchCommandId: ${batchedCommandId}`)
-
-      // execute command on evm
-      const executeData = await axelarClient.getExecuteDataFromBatchCommands(
-        chain_id,
-        batchedCommandId
-      )
-
-      logger.info(`[handleCosmosToEvmEvent] BatchCommands: ${JSON.stringify(executeData)}`)
 
 
-      // Handle case 2: tx wasn't routed or failed on Axelar
-      // TODO: implement
-      // how to check if it's routing issue?
-      // - get ContractCallSubmitted event from hydrogen, which contains message id
-      // - route message
-      const contractCallSubmittedEvent = relay.events.find((event) => event.name === EventName.ContractCallSubmitted)
-      if (!contractCallSubmittedEvent) throw new Error("contractCallSubmittedEvent not found")
-      const routeMessage = await axelarClient.routeMessageRequest(
-        -1,
-        removeQuote(contractCallSubmittedEvent.event_params.message_id),
-        `0x${decodeBase64(removeQuote(contractCallSubmittedEvent.event_params.payload))}`,
-      )
-
-      if (routeMessage) {
-        logger.info(`[handleCosmosToEvmEvent] RouteMessage: ${routeMessage.transactionHash}`)
-      }
 
 
     }
