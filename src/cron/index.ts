@@ -146,9 +146,9 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
         //     UNRECOGNIZED = -1
         // }
 
-        // Handle case 2: tx wasn't routed or failed on Axelar
         if (message.status === 1) {
-          console.log('Handle case 3: evm command wasn\'t signed on Axelar  (message status: STATUS_APPROVED)')
+          // Handle case 2: tx wasn't routed
+          console.log('Handle case 2: tx wasn\'t routed or failed on Axelar (message status: STATUS_APPROVED)')
           // route message first
           const routeMessage = await axelarClient.routeMessageRequest(
             -1,
@@ -175,28 +175,38 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
           if (!signCommand) {
             throw new Error('cannot sign command')
           }
+        } else if (message.status === 3) {
+          // already routed
+          // check if it's in pending
+          const pendingCommands = await axelarClient.getPendingCommands(chain_id)
 
-          // batch command
-          const batchedCommandId = getBatchCommandIdFromSignTx(signCommand)
-          logger.info(`[handleCosmosToEvmEvent] BatchCommandId: ${batchedCommandId}`)
+          const [hash, logIndex] = messageId.split('-');
+          const pendingCommand = pendingCommands.find((command) => command.params.sourceTxHash === hash && command.params.sourceEventIndex === logIndex)
+          if (pendingCommand) {
+            // Handle case 3: evm command wasn't signed on Axelar
+            console.log('Handle case 3: evm command wasn\'t signed on Axelar (already routed, in pending command)')
+            // - sign command
+            const signCommand = await axelarClient.signCommands(chain_id)
+            logger.debug(`[handleCosmosToEvmEvent] SignCommand: ${JSON.stringify(signCommand)}`)
 
-          // execute command on evm
-          // const executeData = await axelarClient.getExecuteDataFromBatchCommands(
-          //   chain_id,
-          //   batchedCommandId
-          // )
-          //
-          // logger.info(`[handleCosmosToEvmEvent] BatchCommands: ${JSON.stringify(executeData)}`)
+            if (signCommand && signCommand.rawLog?.includes('failed')) {
+              throw new Error(signCommand.rawLog)
+            }
+            if (!signCommand) {
+              throw new Error('cannot sign command')
+            }
+          } else {
+            // TODO: either batched already or batched but didn't send
+            // Handle case 4: evm command wasn't batched on Axelar
+            console.log('Handle case 4: evm command wasn\'t batched on Axelar (signed but not approved on evm)')
+            // Handle case 5: tx was batched but wasn't sent to EVM (no ContractCallApproved)
+            console.log('Handle case 5: tx was batched but wasn\'t sent to EVM (signed but not approved on evm)')
+            // TODO: alert, ContractCallApproved wasn't approved on EVM chain x. For some reason axelar did not send the batched tx. Please investigate.
+          }
+
+        } else {
+          throw new Error(`messageId: ${messageId} message status is ${message.status} and cannot be handled`)
         }
-
-        // Handle case 3: evm command wasn't signed on Axelar
-
-
-
-        // Handle case 4: evm command wasn't batched on Axelar
-
-        // Handle case 5: tx was batched but wasn't sent to EVM (no ContractCallApproved)
-        // TODO: alert, ContractCallApproved wasn't approved on EVM chain x. For some reason axelar did not send the batched tx. Please investigate.
       }
 
       // TODO: implement
