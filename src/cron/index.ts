@@ -7,7 +7,7 @@ import { decodeBase64, removeQuote } from '../listeners/AxelarListener/parser'
 export const startCron = async () => {
   // run every 15 minutes
   cron.schedule('*/3 * * * *', async () => {
-    console.debug('running minute cron')
+    // console.debug('running cron')
     // filter for relays that are stuck for at least 1.5 hours
     const thresholdTime = new Date(Date.now() - 1.5 * 60 * 60 * 1000)
     await fixInTransitFromHydrogen(thresholdTime)
@@ -16,11 +16,10 @@ export const startCron = async () => {
 
 export async function fixInTransitFromHydrogen(thresholdTime: Date) {
   const hydrogenClient = new HydrogenClient(env.HYDROGEN_URL)
-  // if (env.CHAIN_ENV !== 'mainnet') return
   // find axelar, in_transit relays
   const inTransitRelays = await hydrogenClient.getInTransitRelays()
   if (inTransitRelays.length === 0) {
-    console.debug('No events in transit')
+    // console.debug('No events in transit')
     return
   }
   const stuckRelays = inTransitRelays.filter(relay => new Date(relay.created_at) < thresholdTime)
