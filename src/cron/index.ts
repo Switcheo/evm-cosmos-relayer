@@ -8,9 +8,9 @@ export const startCron = async () => {
   // run every 15 minutes
   cron.schedule('*/3 * * * *', async () => {
     console.debug('running minute cron')
-    // filter for relays that are stuck for at least 3 hours
-    const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000)
-    await fixInTransitFromHydrogen(threeHoursAgo)
+    // filter for relays that are stuck for at least 1.5 hours
+    const thresholdTime = new Date(Date.now() - 1.5 * 60 * 60 * 1000)
+    await fixInTransitFromHydrogen(thresholdTime)
   })
 }
 
