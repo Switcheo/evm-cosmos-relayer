@@ -6,10 +6,10 @@ import { decodeBase64, removeQuote } from '../listeners/AxelarListener/parser'
 
 export const startCron = async () => {
   // run every 15 minutes
-  cron.schedule('*/3 * * * *', async () => {
+  cron.schedule('*/15 * * * *', async () => {
     // console.debug('running cron')
-    // filter for relays that are stuck for at least 1.5 hours
-    const thresholdTime = new Date(Date.now() - 1.5 * 60 * 60 * 1000)
+    // filter for relays that are stuck for at least 1.1 hours
+    const thresholdTime = new Date(Date.now() - 1.1 * 60 * 60 * 1000)
     await fixInTransitFromHydrogen(thresholdTime)
   })
 }
