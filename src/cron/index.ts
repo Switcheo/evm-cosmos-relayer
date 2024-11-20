@@ -5,16 +5,17 @@ import { logger } from '../logger'
 import { decodeBase64, removeQuote } from '../listeners/AxelarListener/parser'
 
 export const startCron = async () => {
-  // run every 15 minutes
-  cron.schedule('*/15 * * * *', async () => {
+  // run every 10 minutes
+  cron.schedule('*/10 * * * *', async () => {
     // console.debug('running cron')
-    // filter for relays that are stuck for at least 1.1 hours
-    const thresholdTime = new Date(Date.now() - 1.1 * 60 * 60 * 1000)
-    await fixInTransitFromHydrogen(thresholdTime)
+    // filter for relays that are stuck for at least 0.8 hours
+    const inboundThresholdTime = new Date(Date.now() - 0.8 * 60 * 60 * 1000)
+    const outboundThresholdTime = new Date(Date.now() - 0.5 * 60 * 60 * 1000)
+    await fixInTransitFromHydrogen(inboundThresholdTime, outboundThresholdTime)
   })
 }
 
-export async function fixInTransitFromHydrogen(thresholdTime: Date) {
+export async function fixInTransitFromHydrogen(inboundThresholdTime: Date, outboundThresholdTime: Date) {
   const hydrogenClient = new HydrogenClient(env.HYDROGEN_URL)
   // find axelar, in_transit relays
   const inTransitRelays = await hydrogenClient.getInTransitRelays()
@@ -22,7 +23,10 @@ export async function fixInTransitFromHydrogen(thresholdTime: Date) {
     // console.debug('No events in transit')
     return
   }
-  const stuckRelays = inTransitRelays.filter(relay => new Date(relay.created_at) < thresholdTime)
+  const stuckRelays = inTransitRelays.filter(relay => (
+    ((relay.flow_type === 'in') && new Date(relay.created_at) < inboundThresholdTime) ||
+    ((relay.flow_type === 'out') && new Date(relay.created_at) < outboundThresholdTime)
+  ))
 
   logger.info(`Found ${stuckRelays.length} stuck relays`)
   for (const relay of stuckRelays) {
@@ -52,14 +56,21 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
       2) tx not confirmed on axelar so did not emit EVMEventConfirmed
        */
 
-      // TODO: Handle case 1
-      // TODO: allow hydrogen to support syncing?
-
-      // Handle case 2: tx not confirmed on axelar so did not emit EVMEventConfirmed
-      // try to confirm tx
-      const confirmTx = await axelarClient.confirmEvmTx(chain_id, relay.source_tx_hash)
-      if (confirmTx) {
-        logger.info(`fixStuckRelay: confirmed: ${confirmTx.transactionHash}`)
+      const contractCallEvent = relay.events.find((event) => event.name === EventName.ContractCall)
+      if (!contractCallEvent) throw new Error("contractCallEvent not found")
+      const { tx_hash, tx_index} = contractCallEvent
+      const eventId = `${tx_hash}-${tx_index}`
+      const isFound = await isEventFoundOnAxelar(axelarClient, chain_id, eventId)
+      if (isFound) {
+        // TODO: Handle case 1
+        // TODO: allow hydrogen to support syncing?
+      } else {
+        // Handle case 2: tx not confirmed on axelar so did not emit EVMEventConfirmed
+        // try to confirm tx
+        const confirmTx = await axelarClient.confirmEvmTx(chain_id, relay.source_tx_hash)
+        if (confirmTx) {
+          logger.info(`fixStuckRelay: confirmed: ${confirmTx.transactionHash}`)
+        }
       }
     }
     // Handle no destination tx
@@ -218,6 +229,25 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
   }
 }
 
+async function isEventFoundOnAxelar(axelarClient: AxelarClient, chain: string, eventId: string): Promise<boolean> {
+  let eventOnAxelar
+  try {
+    eventOnAxelar = await axelarClient.signingClient.queryClient.evm.Event({ chain, eventId })
+    if (eventOnAxelar.event?.status === 2) {
+      // if completed return true
+      return true
+    } else {
+      return false
+    }
+  } catch (e: any) {
+    if (e.toString().includes('no event with ID')) {
+      return false
+    } else {
+      throw e
+    }
+  }
+
+}
 
 export function getBridgeIdAndChainIdFromConnectionId(connection_id: string): {
   bridge_id: number,
