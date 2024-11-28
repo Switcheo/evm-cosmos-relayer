@@ -60,15 +60,16 @@ if (process.env.NODE_ENV === 'production') {
       })
     );
   }
-} else {
-  logger.add(
-    new transports.Console({
-      format: combine(label({ label: 'relayer' }), ...baseFormats, myFormat),
-    })
-  );
-  apiLogger.add(
-    new transports.Console({
-      format: combine(label({ label: 'api' }), ...baseFormats, myFormat),
-    })
-  );
 }
+
+// output normal logs as well
+logger.add(
+  new transports.Console({
+    format: combine(label({ label: 'relayer' }), ...baseFormats, myFormat),
+  })
+);
+apiLogger.add(
+  new transports.Console({
+    format: combine(label({ label: 'api' }), ...baseFormats, myFormat),
+  })
+);
