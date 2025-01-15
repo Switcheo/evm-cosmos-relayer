@@ -18,7 +18,7 @@ export const parseAnyEvent = async (
     logIndex: eventIndex,
     sourceChain: event.args.sourceChain || currentChainName,
     destinationChain: event.args.destinationChain || currentChainName,
-    waitForFinality: waitForFinality(provider, event.transactionHash, finalityBlocks),
+    waitForFinality: () => waitForFinality(provider, event.transactionHash, finalityBlocks),
     args: filterEventArgs(event),
   };
 };
@@ -28,6 +28,7 @@ const waitForFinality = async (provider: ethers.providers.Provider, hash: string
   const targetBlockNumber = tx.blockNumber;
   console.log(`Waiting for block ${targetBlockNumber} to be finalized...`);
 
+  /* eslint-disable-next-line no-constant-condition */
   while (true) {
     try {
       const finalizedBlock = await provider.getBlock("finalized");
