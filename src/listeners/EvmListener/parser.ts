@@ -18,13 +18,41 @@ export const parseAnyEvent = async (
     logIndex: eventIndex,
     sourceChain: event.args.sourceChain || currentChainName,
     destinationChain: event.args.destinationChain || currentChainName,
-    waitForFinality: () => {
-      return provider.waitForTransaction(event.transactionHash, finalityBlocks);
-    },
+    waitForFinality: waitForFinality(provider, event.transactionHash, finalityBlocks),
     args: filterEventArgs(event),
   };
 };
 
+const waitForFinality = async (provider: ethers.providers.Provider, hash: string, finalityBlocks: number) => {
+  const tx = await provider.waitForTransaction(hash, finalityBlocks);
+  const targetBlockNumber = tx.blockNumber;
+  console.log(`Waiting for block ${targetBlockNumber} to be finalized...`);
+
+  while (true) {
+    try {
+      const finalizedBlock = await provider.getBlock("finalized");
+      if (finalizedBlock.number >= targetBlockNumber) {
+        return tx
+      }
+    } catch (error) {
+      // If the chain doesn't support the finalized tag, it is a pre-Merge EVM chain,
+      // so we just assume finalityBlocks is sufficient.
+      if (isFinalizedTagUnsupportedError(error)) {
+        return tx
+      }
+      console.error("Error fetching finalized block:", error)
+    }
+    await new Promise((resolve) => setTimeout(resolve, 20000));
+  }
+}
+
+const isFinalizedTagUnsupportedError = (error: any) => {
+  return (
+      error.message.includes("invalid block tag finalized") || // Common error message
+      error.message.includes("unsupported block tag") ||       // Alternative error message
+      error.code === -32602                                    // JSON-RPC invalid params error code
+  );
+}
 
 const filterEventArgs = (event: TypedEvent) => {
   return Object.entries(event.args).reduce((acc, [key, value]) => {
