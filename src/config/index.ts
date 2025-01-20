@@ -13,6 +13,7 @@ export const env = {
   CHAIN_ENV: process.env.CHAIN_ENV || 'testnet',
   LOG_LEVEL: process.env.LOG_LEVEL || "info",
   HYDROGEN_URL: process.env.HYDROGEN_URL || "https://hydrogen-api.carbon.network",
+  DELAY_AFTER_FINALITY: parseInt(process.env.DELAY_AFTER_FINALITY || '60000'),
 };
 
 export * from './chains';
