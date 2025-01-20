@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import { TypedEvent } from '../../types/contracts/common';
-import { env } from './index';
+import { env } from '../../index';
 
 export const parseAnyEvent = async (
   currentChainName: string,
