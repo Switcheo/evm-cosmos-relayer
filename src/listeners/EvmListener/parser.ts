@@ -1,5 +1,6 @@
 import { ethers } from 'ethers';
 import { TypedEvent } from '../../types/contracts/common';
+import { env } from './index';
 
 export const parseAnyEvent = async (
   currentChainName: string,
@@ -33,6 +34,8 @@ const waitForFinality = async (provider: ethers.providers.Provider, hash: string
     try {
       const finalizedBlock = await provider.getBlock("finalized");
       if (finalizedBlock.number >= targetBlockNumber) {
+        // Allow some buffer for axelar vals that are connected to lagging rpc nodes.
+        await delay(env.DELAY_AFTER_FINALITY);
         return tx
       }
     } catch (error) {
@@ -62,3 +65,7 @@ const filterEventArgs = (event: TypedEvent) => {
     return acc;
   }, {} as any);
 };
+
+const delay = (ms: number): Promise<void> => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
