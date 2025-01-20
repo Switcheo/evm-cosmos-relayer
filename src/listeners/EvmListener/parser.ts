@@ -1,6 +1,7 @@
 import { ethers } from 'ethers';
 import { TypedEvent } from '../../types/contracts/common';
 import { env } from '../../index';
+import { logger } from "../../logger";
 
 export const parseAnyEvent = async (
   currentChainName: string,
@@ -27,7 +28,7 @@ export const parseAnyEvent = async (
 const waitForFinality = async (provider: ethers.providers.Provider, hash: string, finalityBlocks: number) => {
   const tx = await provider.waitForTransaction(hash, finalityBlocks);
   const targetBlockNumber = tx.blockNumber;
-  console.log(`Waiting for block ${targetBlockNumber} to be finalized...`);
+  logger.info(`Waiting for block ${targetBlockNumber} to be finalized...`);
 
   /* eslint-disable-next-line no-constant-condition */
   while (true) {
@@ -42,9 +43,10 @@ const waitForFinality = async (provider: ethers.providers.Provider, hash: string
       // If the chain doesn't support the finalized tag, it is a pre-Merge EVM chain,
       // so we just assume finalityBlocks is sufficient.
       if (isFinalizedTagUnsupportedError(error)) {
+        logger.warn("Chain doesn't support finalized tag");
         return tx
       }
-      console.error("Error fetching finalized block:", error)
+      logger.error("Error fetching finalized block:", error);
     }
     await new Promise((resolve) => setTimeout(resolve, 20000));
   }
@@ -67,5 +69,6 @@ const filterEventArgs = (event: TypedEvent) => {
 };
 
 const delay = (ms: number): Promise<void> => {
+  logger.info(`Waiting ${ms / 1000} seconds...`);
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
