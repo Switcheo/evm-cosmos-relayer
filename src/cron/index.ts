@@ -4,6 +4,8 @@ import { AxelarClient, DatabaseClient, EventName, HydrogenClient, RelayData } fr
 import { logger } from '../logger'
 import { decodeBase64, removeQuote } from '../listeners/AxelarListener/parser'
 
+const db = new DatabaseClient()
+
 export const startCron = async () => {
   // run every 10 minutes
   cron.schedule('*/10 * * * *', async () => {
@@ -31,7 +33,6 @@ export async function fixInTransitFromHydrogen(inboundThresholdTime: Date, outbo
   logger.info(`Found ${stuckRelays.length} stuck relays`)
   for (const relay of stuckRelays) {
     try {
-      const db = new DatabaseClient()
       const axelarClient = await AxelarClient.init(db, axelarChain)
       await fixStuckRelay(db, axelarClient, hydrogenClient, relay)
     } catch (e) {
