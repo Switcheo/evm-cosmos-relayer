@@ -11,8 +11,8 @@ export const startCron = async () => {
   cron.schedule('*/10 * * * *', async () => {
     // console.debug('running cron')
     // filter for relays that are stuck for at least 0.8 hours
-    const inboundThresholdTime = new Date(Date.now() - 0.8 * 60 * 60 * 1000)
-    const outboundThresholdTime = new Date(Date.now() - 0.5 * 60 * 60 * 1000)
+    const inboundThresholdTime = new Date(Date.now() - 0.55 * 60 * 60 * 1000)
+    const outboundThresholdTime = new Date(Date.now() - 0.4 * 60 * 60 * 1000)
     await fixInTransitFromHydrogen(inboundThresholdTime, outboundThresholdTime)
   })
 }
