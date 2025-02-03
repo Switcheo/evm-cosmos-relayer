@@ -13,7 +13,9 @@ import { CosmosNetworkConfig, EvmNetworkConfig } from './types';
 // Function to check if all required fields are filled
 const isValidEvmEntry = (entry: any) => {
   const isValid = entry.id && entry.name && entry.finality && entry.rpcUrl && entry.gateway && entry.axelarCarbonGateway;
-  console.warn(`${entry.name} config entry is invalid`)
+  if (!isValid) {
+    console.warn(`${entry.name} config entry is invalid`)
+  }
   return isValid;
 };
 
