@@ -1,6 +1,6 @@
 import { env, evmChains } from '../src/config'
 import { fixInTransitFromHydrogen } from '../src/cron'
-import { EvmClient } from '../src'
+import { EvmClient } from '../src/clients'
 
 // usage example:
 // ts-node scripts/fix-stuck-relays.ts
