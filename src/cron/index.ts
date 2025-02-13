@@ -73,7 +73,7 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
 
         // check if finalized first
         const evmClient = evmClients[chain_id]
-        const isFinalized = await isEvmHeightFinalized(evmClient, relay.source_event!.block_height)
+        const isFinalized = await isEvmTxHeightFinalized(evmClient, relay.source_event!.block_height)
         if (!isFinalized) {
           logger.info(`fixStuckRelay: ${chain_id} callContract tx ${relay.source_tx_hash} is not finalized and should not be sent to axelar for confirmation`)
           return
@@ -273,7 +273,9 @@ export function getBridgeIdAndChainIdFromConnectionId(connection_id: string): {
   }
 }
 
-export async function isEvmHeightFinalized(evmClient: EvmClient, targetBlockNumber: number): Promise<boolean> {
+export async function isEvmTxHeightFinalized(evmClient: EvmClient, txHeight: number): Promise<boolean> {
   const finalizedBlockHeight = await evmClient.getFinalizedBlockHeight()
+  // Allow some buffer for axelar vals that are connected to lagging rpc nodes with finalityBlocks
+  const targetBlockNumber = txHeight + evmClient.finalityBlocks;
   return finalizedBlockHeight >= targetBlockNumber
 }

@@ -16,7 +16,7 @@ export class EvmClient {
   public gateway: IAxelarGateway;
   private maxRetry: number;
   private retryDelay: number;
-  private finalityBlocks: number;
+  public finalityBlocks: number;
   chainId: string;
 
   constructor(
@@ -43,14 +43,15 @@ export class EvmClient {
     let finalizedHeight: number
     try {
       const finalizedBlock = await this.wallet.provider.getBlock("finalized");
-      finalizedHeight = finalizedBlock.number - 50 // Reduce by 50 blocks to account for lagging nodes on axelar
+
+      finalizedHeight = finalizedBlock.number
     } catch (error) {
       // If the chain doesn't support the finalized tag, it is a pre-Merge EVM chain,
       // so we just take the latest block - config's finalityBlocks
       if (isFinalizedTagUnsupportedError(error)) {
         logger.warn("Chain doesn't support finalized tag, getting normal block");
         const latestBlock = await this.wallet.provider.getBlock("latest");
-        finalizedHeight = latestBlock.number - this.finalityBlocks
+        finalizedHeight = latestBlock.number
       } else {
         throw error
       }

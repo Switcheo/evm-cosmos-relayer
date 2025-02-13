@@ -15,7 +15,7 @@ import {
   ContractCallApprovedEventObject,
   ContractCallEventObject,
 } from '../types/contracts/IAxelarGateway';
-import { isEvmHeightFinalized } from '../cron'
+import { isEvmTxHeightFinalized } from '../cron'
 
 export const getBatchCommandIdFromSignTx = (signTx: any) => {
   const rawLog = JSON.parse(signTx.rawLog || '{}');
@@ -71,7 +71,7 @@ export async function handleEvmToCosmosEvent(
 ) {
   // check if finalized first
   const { blockNumber, sourceChain, hash } = event
-  const isFinalized = await isEvmHeightFinalized(evmClient, blockNumber)
+  const isFinalized = await isEvmTxHeightFinalized(evmClient, blockNumber)
   if (!isFinalized) {
     logger.info(`[handleEvmToCosmosEvent] ${sourceChain} callContract tx ${hash} is not finalized and should not be sent to axelar for confirmation`)
     return

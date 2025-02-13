@@ -1,7 +1,6 @@
-import { ethers } from 'ethers';
-import { TypedEvent } from '../../types/contracts/common';
-import { env } from '../../index';
-import { logger } from "../../logger";
+import { ethers } from 'ethers'
+import { TypedEvent } from '../../types/contracts/common'
+import { logger } from '../../logger'
 
 export const parseAnyEvent = async (
   currentChainName: string,
@@ -25,9 +24,10 @@ export const parseAnyEvent = async (
   };
 };
 
-const waitForFinality = async (provider: ethers.providers.Provider, hash: string, finalityBlocks: number) => {
-  const tx = await provider.waitForTransaction(hash, finalityBlocks);
-  const targetBlockNumber = tx.blockNumber;
+const waitForFinality = async (provider: ethers.providers.Provider, hash: string, bufferBlocks: number) => {
+  const tx = await provider.waitForTransaction(hash);
+  // Allow some buffer for axelar vals that are connected to lagging rpc nodes.
+  const targetBlockNumber = tx.blockNumber + bufferBlocks;
   logger.info(`Waiting for block ${targetBlockNumber} to be finalized...`);
 
   /* eslint-disable-next-line no-constant-condition */
@@ -35,8 +35,6 @@ const waitForFinality = async (provider: ethers.providers.Provider, hash: string
     try {
       const finalizedBlock = await provider.getBlock("finalized");
       if (finalizedBlock.number >= targetBlockNumber) {
-        // Allow some buffer for axelar vals that are connected to lagging rpc nodes.
-        await delay(env.DELAY_AFTER_FINALITY);
         return tx
       }
     } catch (error) {
