@@ -1,12 +1,14 @@
-import { env } from '../src/config'
+import { env, evmChains } from '../src/config'
 import { fixInTransitFromHydrogen } from '../src/cron'
+import { EvmClient } from '../src'
 
 // usage example:
 // ts-node scripts/fix-stuck-relays.ts
 async function main() {
   console.log('running fix-stuck-relays with hydrogen URL: ', env.HYDROGEN_URL)
 
-  await fixInTransitFromHydrogen(new Date(), new Date())
+  const evmClients = Object.fromEntries(evmChains.map((chain) => [chain.id, new EvmClient(chain)]))
+  await fixInTransitFromHydrogen(evmClients, new Date(), new Date())
 }
 
 (async () => {
