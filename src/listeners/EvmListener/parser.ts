@@ -28,7 +28,7 @@ const waitForFinality = async (provider: ethers.providers.Provider, hash: string
   const tx = await provider.waitForTransaction(hash);
   // Allow some buffer for axelar vals that are connected to lagging rpc nodes.
   const targetBlockNumber = tx.blockNumber + bufferBlocks;
-  logger.info(`Waiting for ${hash} to be finalized at block ${targetBlockNumber} ...`);
+  logger.info(`Waiting for ${hash} to be finalized at block ${targetBlockNumber} (buffered by ${bufferBlocks} blocks)...`);
 
   /* eslint-disable-next-line no-constant-condition */
   while (true) {
@@ -37,7 +37,7 @@ const waitForFinality = async (provider: ethers.providers.Provider, hash: string
       if (finalizedBlock.number >= targetBlockNumber) {
         return tx
       }
-      logger.info(`Waiting for ${hash} to be finalized at block ${targetBlockNumber}. Current finalized block: ${finalizedBlock}`);
+      logger.info(`Waiting for ${hash} to be finalized at block ${targetBlockNumber}. Current finalized block: ${finalizedBlock.number}`);
     } catch (error) {
       // If the chain doesn't support the finalized tag, it is a pre-Merge EVM chain,
       // so we just assume finalityBlocks is sufficient.
