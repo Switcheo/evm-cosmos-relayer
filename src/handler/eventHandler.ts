@@ -15,6 +15,7 @@ import {
   ContractCallApprovedEventObject,
   ContractCallEventObject,
 } from '../types/contracts/IAxelarGateway';
+import { isEvmHeightFinalized } from '../cron'
 
 export const getBatchCommandIdFromSignTx = (signTx: any) => {
   const rawLog = JSON.parse(signTx.rawLog || '{}');
@@ -65,8 +66,16 @@ export async function handleEvmToCosmosConfirmEvent(
 
 export async function handleEvmToCosmosEvent(
   vxClient: AxelarClient,
+  evmClient: EvmClient,
   event: EvmEvent<ContractCallWithTokenEventObject | ContractCallEventObject>
 ) {
+  // check if finalized first
+  const { blockNumber, sourceChain, hash } = event
+  const isFinalized = await isEvmHeightFinalized(evmClient, blockNumber)
+  if (!isFinalized) {
+    logger.info(`[handleEvmToCosmosEvent] ${sourceChain} callContract tx ${hash} is not finalized and should not be sent to axelar for confirmation`)
+    return
+  }
   const confirmTx = await vxClient.confirmEvmTx(event.sourceChain, event.hash);
   if (confirmTx) {
     logger.info(`[handleEvmToCosmosEvent] Confirmed: ${confirmTx.transactionHash}`);
@@ -75,15 +84,7 @@ export async function handleEvmToCosmosEvent(
 
 export async function handleCosmosToEvmEvent<
   T extends ContractCallSubmitted | ContractCallWithTokenSubmitted
->(vxClient: AxelarClient, evmClients: EvmClient[], event: IBCEvent<T>) {
-  // Find the evm client associated with event's destination chain
-  const evmClient = evmClients.find(
-    (client) => client.chainId.toLowerCase() === event.args.destinationChain.toLowerCase()
-  );
-
-  // If no evm client found, return
-  if (!evmClient) return;
-
+>(vxClient: AxelarClient, evmClient: EvmClient, event: IBCEvent<T>) {
   const routeMessage = await vxClient.routeMessageRequest(
     -1,
     event.args.messageId,

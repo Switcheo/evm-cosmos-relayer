@@ -9,6 +9,7 @@ import {
 import { env } from '..';
 import { sleep } from './sleep';
 import { logger } from '../logger';
+import { isFinalizedTagUnsupportedError } from '../listeners/EvmListener/parser'
 
 export class EvmClient {
   public wallet: Wallet;
@@ -36,6 +37,26 @@ export class EvmClient {
 
   public getSenderAddress() {
     return this.wallet.address;
+  }
+
+  public async getFinalizedBlockHeight() {
+    let finalizedHeight: number
+    try {
+      const finalizedBlock = await this.wallet.provider.getBlock("finalized");
+      finalizedHeight = finalizedBlock.number - 50 // Reduce by 50 blocks to account for lagging nodes on axelar
+    } catch (error) {
+      // If the chain doesn't support the finalized tag, it is a pre-Merge EVM chain,
+      // so we just take the latest block - config's finalityBlocks
+      if (isFinalizedTagUnsupportedError(error)) {
+        logger.warn("Chain doesn't support finalized tag, getting normal block");
+        const latestBlock = await this.wallet.provider.getBlock("latest");
+        finalizedHeight = latestBlock.number - this.finalityBlocks
+      } else {
+        throw error
+      }
+    }
+
+    return finalizedHeight
   }
 
   public waitForFinality(txHash: string) {

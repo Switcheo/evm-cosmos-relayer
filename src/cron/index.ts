@@ -1,23 +1,24 @@
 import cron from 'node-cron'
-import { axelarChain, env } from '../config'
-import { AxelarClient, DatabaseClient, EventName, HydrogenClient, RelayData } from '../clients'
+import { axelarChain, env, evmChains } from '../config'
+import { AxelarClient, DatabaseClient, EventName, EvmClient, HydrogenClient, RelayData } from '../clients'
 import { logger } from '../logger'
 import { decodeBase64, removeQuote } from '../listeners/AxelarListener/parser'
 
 const db = new DatabaseClient()
 
 export const startCron = async () => {
-  // run every 10 minutes
-  cron.schedule('*/10 * * * *', async () => {
+  const evmClients = Object.fromEntries(evmChains.map((chain) => [chain.id, new EvmClient(chain)]))
+  // run every 5 minutes
+  cron.schedule('*/5 * * * *', async () => {
     // console.debug('running cron')
-    // filter for relays that are stuck for at least 0.8 hours
-    const inboundThresholdTime = new Date(Date.now() - 0.55 * 60 * 60 * 1000)
-    const outboundThresholdTime = new Date(Date.now() - 0.4 * 60 * 60 * 1000)
-    await fixInTransitFromHydrogen(inboundThresholdTime, outboundThresholdTime)
+    // filter for relays that are stuck for x time
+    const inboundThresholdTime = new Date(Date.now() - 5 * 60 * 1000) // 5 minutes
+    const outboundThresholdTime = new Date(Date.now() - 10 * 60 * 60 * 1000) // 10 minutes
+    await fixInTransitFromHydrogen(evmClients, inboundThresholdTime, outboundThresholdTime)
   })
 }
 
-export async function fixInTransitFromHydrogen(inboundThresholdTime: Date, outboundThresholdTime: Date) {
+export async function fixInTransitFromHydrogen(evmClients: Record<string, EvmClient>, inboundThresholdTime: Date, outboundThresholdTime: Date) {
   const hydrogenClient = new HydrogenClient(env.HYDROGEN_URL)
   // find axelar, in_transit relays
   const inTransitRelays = await hydrogenClient.getInTransitRelays()
@@ -27,14 +28,14 @@ export async function fixInTransitFromHydrogen(inboundThresholdTime: Date, outbo
   }
   const stuckRelays = inTransitRelays.filter(relay => (
     ((relay.flow_type === 'in') && new Date(relay.created_at) < inboundThresholdTime) ||
-    ((relay.flow_type === 'out') && new Date(relay.created_at) < outboundThresholdTime)
+    ((relay.flow_type === 'out') && new Date(Number(relay.start_block_time) * 1000) < outboundThresholdTime)
   ))
 
   logger.info(`Found ${stuckRelays.length} stuck relays`)
   for (const relay of stuckRelays) {
     try {
       const axelarClient = await AxelarClient.init(db, axelarChain)
-      await fixStuckRelay(db, axelarClient, hydrogenClient, relay)
+      await fixStuckRelay(db, axelarClient, hydrogenClient, evmClients, relay)
     } catch (e) {
       console.error(`Could not fix stuck relay due to error: ${e}`)
       // TODO: alert chat?
@@ -42,7 +43,7 @@ export async function fixInTransitFromHydrogen(inboundThresholdTime: Date, outbo
   }
 }
 
-export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClient, hydrogenClient: HydrogenClient, relayData: RelayData) {
+export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClient, hydrogenClient: HydrogenClient, evmClients: Record<string, EvmClient>, relayData: RelayData) {
   const { chain_id } = getBridgeIdAndChainIdFromConnectionId(relayData.connection_id)
   logger.info(`Fixing relay id: ${relayData.id} for ${relayData.connection_id}`)
   // find the relay details with its corresponding events/payloads first
@@ -65,9 +66,19 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
       if (isFound) {
         // TODO: Handle case 1
         // TODO: allow hydrogen to support syncing?
+        logger.info(`fixStuckRelay: already sent to axelar with eventId: ${eventId}`)
       } else {
         // Handle case 2: tx not confirmed on axelar so did not emit EVMEventConfirmed
         // try to confirm tx
+
+        // check if finalized first
+        const evmClient = evmClients[chain_id]
+        const isFinalized = await isEvmHeightFinalized(evmClient, relay.source_event!.block_height)
+        if (!isFinalized) {
+          logger.info(`fixStuckRelay: ${chain_id} callContract tx ${relay.source_tx_hash} is not finalized and should not be sent to axelar for confirmation`)
+          return
+        }
+
         const confirmTx = await axelarClient.confirmEvmTx(chain_id, relay.source_tx_hash)
         if (confirmTx) {
           logger.info(`fixStuckRelay: confirmed: ${confirmTx.transactionHash}`)
@@ -260,4 +271,9 @@ export function getBridgeIdAndChainIdFromConnectionId(connection_id: string): {
     bridge_id: Number(split[0]),
     chain_id: split[1],
   }
+}
+
+export async function isEvmHeightFinalized(evmClient: EvmClient, targetBlockNumber: number): Promise<boolean> {
+  const finalizedBlockHeight = await evmClient.getFinalizedBlockHeight()
+  return finalizedBlockHeight >= targetBlockNumber
 }

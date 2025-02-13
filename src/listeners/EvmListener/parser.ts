@@ -52,7 +52,7 @@ const waitForFinality = async (provider: ethers.providers.Provider, hash: string
   }
 }
 
-const isFinalizedTagUnsupportedError = (error: any) => {
+export const isFinalizedTagUnsupportedError = (error: any) => {
   return (
       error.message.includes("invalid block tag finalized") || // Common error message
       error.message.includes("unsupported block tag") ||       // Alternative error message

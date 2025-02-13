@@ -59,7 +59,7 @@ export async function startRelayer() {
   const axelarListener = new AxelarListener(axelarChain.ws);
   const evmListeners = evmChains.map((evm) => new EvmListener(evm, cosmosChainNames));
   const axelarClient = await AxelarClient.init(db, axelarChain);
-  const evmClients = evmChains.map((evm) => new EvmClient(evm));
+  const evmClients = Object.fromEntries(evmChains.map((chain) => [chain.id, new EvmClient(chain)]))
   //   const cosmosClients = cosmosChains.map((cosmos) => AxelarClient.init(cosmos));
 
   /** ######## Handle events ########## */
@@ -75,7 +75,7 @@ export async function startRelayer() {
         // Wait for the event to be finalized
         .then(() => event.waitForFinality())
         //  Handle the event by sending the confirm tx to the axelar network
-        .then(() => handleEvmToCosmosEvent(axelarClient, ev))
+        .then(() => handleEvmToCosmosEvent(axelarClient, evmClients[event.sourceChain], ev))
         // catch any error
         .catch((e) => handleAnyError(db, 'handleEvmToCosmosEvent', e));
     });
@@ -92,7 +92,7 @@ export async function startRelayer() {
         // Wait for the event to be finalized
         .then(() => ev.waitForFinality())
         // Handle the event by sending the confirm tx to the axelar network
-        .then(() => handleEvmToCosmosEvent(axelarClient, ev))
+        .then(() => handleEvmToCosmosEvent(axelarClient, evmClients[event.sourceChain], ev))
         // catch any error
         .catch((e) => handleAnyError(db, 'handleEvmToCosmosEvent', e));
     });
@@ -130,7 +130,7 @@ export async function startRelayer() {
       // Create the event in the database
       .then(() => db.createCosmosContractCallEvent(event))
       // Handle the event by sending a bunch of txs to axelar network
-      .then(() => handleCosmosToEvmEvent(axelarClient, evmClients, event))
+      .then(() => handleCosmosToEvmEvent(axelarClient, evmClients[event.args.destinationChain.toLowerCase()], event))
       // Update the event status in the database
       .then((tx) => db.updateCosmosToEvmEvent(event, tx))
       // catch any error
@@ -145,7 +145,7 @@ export async function startRelayer() {
       // Create the event in the database
       .then(() => db.createCosmosContractCallWithTokenEvent(event as IBCEvent<ContractCallWithTokenSubmitted>))
       // Handle the event by sending a bunch of txs to axelar network
-      .then(() => handleCosmosToEvmEvent(axelarClient, evmClients, event))
+      .then(() => handleCosmosToEvmEvent(axelarClient, evmClients[event.args.destinationChain.toLowerCase()], event))
       // Update the event status in the database
       .then((tx) => db.updateCosmosToEvmEvent(event, tx))
       // catch any error
@@ -156,7 +156,7 @@ export async function startRelayer() {
   sEvmApproveContractCallWithToken
     .pipe(filterSourceChainOnEvm(cosmosChains))
     // Select the evm client that matches the event's chain
-    .pipe(mergeMap((event) => mapEventToEvmClient(event, evmClients)))
+    .pipe(mergeMap((event) => mapEventToEvmClient(event, Object.values(evmClients))))
     .subscribe(({ evmClient, event }) => {
       const ev = event as EvmEvent<ContractCallApprovedWithMintEventObject>;
       prepareHandler(event, db, 'handleCosmosToEvmCallContractWithTokenCompleteEvent')
@@ -178,7 +178,7 @@ export async function startRelayer() {
   sEvmApproveContractCall
     .pipe(filterSourceChainOnEvm(cosmosChains))
     // Select the evm client that matches the event's chain
-    .pipe(mergeMap((event) => mapEventToEvmClient(event, evmClients)))
+    .pipe(mergeMap((event) => mapEventToEvmClient(event, Object.values(evmClients))))
     .subscribe(({ event, evmClient }) => {
       prepareHandler(event, db, 'handleCosmosToEvmCallContractCompleteEvent')
         // Find the array of relay data associated with the event from the database

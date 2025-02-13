@@ -1,13 +1,6 @@
-import { DatabaseClient } from '../../clients';
-import {
-  ContractCallSubmitted,
-  ContractCallWithTokenSubmitted,
-  ExecuteRequest,
-  IBCEvent,
-  IBCPacketEvent,
-} from '../../types';
-import { Parser } from './parser';
-import { env } from '../../config'
+import { DatabaseClient } from '../../clients'
+import { ContractCallSubmitted, ContractCallWithTokenSubmitted, ExecuteRequest, IBCEvent, IBCPacketEvent, } from '../../types'
+import { Parser } from './parser'
 
 export interface AxelarListenerEvent<T> {
   type: string;
