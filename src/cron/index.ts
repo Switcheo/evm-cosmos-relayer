@@ -28,7 +28,7 @@ export async function fixInTransitFromHydrogen(evmClients: Record<string, EvmCli
   }
   const stuckRelays = inTransitRelays.filter(relay => (
     ((relay.flow_type === 'in') && new Date(relay.created_at) < inboundThresholdTime) ||
-    ((relay.flow_type === 'out') && new Date(Number(relay.start_block_time) * 1000) < outboundThresholdTime)
+    ((relay.flow_type === 'out') && new Date(Number(relay.start_block_time)) < outboundThresholdTime)
   ))
 
   logger.info(`Found ${stuckRelays.length} stuck relays`)
