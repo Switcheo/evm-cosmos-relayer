@@ -13,7 +13,7 @@ export const startCron = async () => {
     // console.debug('running cron')
     // filter for relays that are stuck for x time
     const inboundThresholdTime = new Date(Date.now() - 5 * 60 * 1000) // 5 minutes
-    const outboundThresholdTime = new Date(Date.now() - 10 * 60 * 60 * 1000) // 10 minutes
+    const outboundThresholdTime = new Date(Date.now() - 10 * 60 * 1000) // 10 minutes
     await fixInTransitFromHydrogen(evmClients, inboundThresholdTime, outboundThresholdTime)
   })
 }
@@ -145,6 +145,7 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
 
       // Handle case 6: tx wasn't executed on EVM (have ContractCallApproved but no ContractCallExecuted)
       if (eventNames.includes(EventName.ContractCallApproved)) {
+        console.warn(`ContractCall wasn't executed on EVM chain ${chain_id}. Either the carbon_axelar_execute_relayer ran out of funds or is not working properly.`)
         // TODO: alert, ContractCall wasn't executed on EVM chain x. Either the carbon_axelar_execute_relayer ran out of funds or is not working properly.
         return
       }
