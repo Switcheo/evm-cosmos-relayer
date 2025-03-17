@@ -57,7 +57,7 @@ const cosmosChainNames = cosmosChains.map((chain) => chain.chainId);
 
 export async function startRelayer() {
   const axelarListener = new AxelarListener(axelarChain.ws);
-  const evmListeners = evmChains.map((evm) => new EvmListener(evm, cosmosChainNames));
+  const evmListeners = await Promise.all(evmChains.map(async (evm) => await EvmListener.create(evm, cosmosChainNames)));
   const axelarClient = await AxelarClient.init(db, axelarChain);
   const evmClients = Object.fromEntries(evmChains.map((chain) => [chain.id, new EvmClient(chain)]))
   //   const cosmosClients = cosmosChains.map((cosmos) => AxelarClient.init(cosmos));
