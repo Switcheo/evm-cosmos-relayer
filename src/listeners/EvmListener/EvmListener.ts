@@ -38,7 +38,8 @@ export class EvmListener {
       try {
         const wsProvider = new ethers.providers.WebSocketProvider(evm.wsUrl);
         // Test WS connection by getting the latest block number.
-        await wsProvider.getBlockNumber();
+        const latestBlock = await wsProvider.getBlockNumber();
+        logger.debug(`EvmListener on ${evm.wsUrl} latest block: ${latestBlock}`);
         listener.provider = wsProvider;
         listener.gatewayContract = IAxelarGateway__factory.connect(evm.gateway, wsProvider);
         logger.info(`[EVMListener] [${listener.chainId}] Connected via WS.`);

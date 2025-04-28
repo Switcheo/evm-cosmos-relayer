@@ -262,15 +262,26 @@ async function isEventFoundOnAxelar(axelarClient: AxelarClient, chain: string, e
 
 }
 
+const LegacyChainIdMap: Record<string, string> = {
+  ethereum: 'Ethereum',
+  polygon: 'Polygon',
+  avalanche: 'Avalanche',
+  fantom: 'Fantom',
+  moonbeam: 'Moonbeam',
+}
+
 export function getBridgeIdAndChainIdFromConnectionId(connection_id: string): {
   bridge_id: number,
   chain_id: string
 } {
   const Delimiter = '/'
   const split = connection_id.split(Delimiter)
+
+  // certain older blockchains have capitalized chain_id on axelar
+
   return {
     bridge_id: Number(split[0]),
-    chain_id: split[1],
+    chain_id: LegacyChainIdMap[split[1]],
   }
 }
 
