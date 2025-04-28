@@ -278,10 +278,14 @@ export function getBridgeIdAndChainIdFromConnectionId(connection_id: string): {
   const split = connection_id.split(Delimiter)
 
   // certain older blockchains have capitalized chain_id on axelar
+  let chainId = split[1]
+  if (LegacyChainIdMap[chainId]) {
+    chainId = LegacyChainIdMap[chainId]
+  }
 
   return {
     bridge_id: Number(split[0]),
-    chain_id: LegacyChainIdMap[split[1]],
+    chain_id: chainId,
   }
 }
 
