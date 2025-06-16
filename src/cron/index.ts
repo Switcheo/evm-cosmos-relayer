@@ -3,6 +3,9 @@ import { axelarChain, env, evmChains } from '../config'
 import { AxelarClient, DatabaseClient, EventName, EvmClient, HydrogenClient, RelayData } from '../clients'
 import { logger } from '../logger'
 import { decodeBase64, removeQuote } from '../listeners/AxelarListener/parser'
+import { getBridgeIdAndChainIdFromConnectionId, isEventFoundOnAxelar, isEvmTxHeightFinalized } from './utils'
+import { sendTelegramAlertWithPriority } from 'cron/telegram'
+import { sha256, toUtf8Bytes } from 'ethers/lib/utils'
 
 const db = new DatabaseClient()
 
@@ -37,8 +40,10 @@ export async function fixInTransitFromHydrogen(evmClients: Record<string, EvmCli
       const axelarClient = await AxelarClient.init(db, axelarChain)
       await fixStuckRelay(db, axelarClient, hydrogenClient, evmClients, relay)
     } catch (e) {
-      console.error(`Could not fix stuck relay due to error: ${e}`)
-      // TODO: alert chat?
+      const msg = `Could not fix stuck relay due to error: ${e}`
+      const messageHash = sha256(toUtf8Bytes(msg))
+      console.error(msg)
+      await sendTelegramAlertWithPriority(msg, 'notify', messageHash)
     }
   }
 }
@@ -105,7 +110,8 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
         logger.info(`Confirmed: ${tx.transactionHash}`)
       }
     }
-  } else {
+  }
+  else {
     // ** OUTBOUND ** //
 
     // Handle no bridging tx
@@ -240,58 +246,4 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
 
     }
   }
-}
-
-async function isEventFoundOnAxelar(axelarClient: AxelarClient, chain: string, eventId: string): Promise<boolean> {
-  let eventOnAxelar
-  try {
-    eventOnAxelar = await axelarClient.signingClient.queryClient.evm.Event({ chain, eventId })
-    if (eventOnAxelar.event?.status === 2) {
-      // if completed return true
-      return true
-    } else {
-      return false
-    }
-  } catch (e: any) {
-    if (e.toString().includes('no event with ID')) {
-      return false
-    } else {
-      throw e
-    }
-  }
-
-}
-
-const LegacyChainIdMap: Record<string, string> = {
-  ethereum: 'Ethereum',
-  polygon: 'Polygon',
-  avalanche: 'Avalanche',
-  fantom: 'Fantom',
-  moonbeam: 'Moonbeam',
-}
-
-export function getBridgeIdAndChainIdFromConnectionId(connection_id: string): {
-  bridge_id: number,
-  chain_id: string
-} {
-  const Delimiter = '/'
-  const split = connection_id.split(Delimiter)
-
-  // certain older blockchains have capitalized chain_id on axelar
-  let chainId = split[1]
-  if (LegacyChainIdMap[chainId]) {
-    chainId = LegacyChainIdMap[chainId]
-  }
-
-  return {
-    bridge_id: Number(split[0]),
-    chain_id: chainId,
-  }
-}
-
-export async function isEvmTxHeightFinalized(evmClient: EvmClient, txHeight: number): Promise<boolean> {
-  const finalizedBlockHeight = await evmClient.getFinalizedBlockHeight()
-  // Allow some buffer for axelar vals that are connected to lagging rpc nodes with finalityBlocks
-  const targetBlockNumber = txHeight + evmClient.finalityBlocks;
-  return finalizedBlockHeight >= targetBlockNumber
 }

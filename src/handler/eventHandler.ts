@@ -15,7 +15,7 @@ import {
   ContractCallApprovedEventObject,
   ContractCallEventObject,
 } from '../types/contracts/IAxelarGateway';
-import { isEvmTxHeightFinalized } from '../cron'
+import { isEvmTxHeightFinalized } from '../cron/utils'
 
 export const getBatchCommandIdFromSignTx = (signTx: any) => {
   const rawLog = JSON.parse(signTx.rawLog || '{}');
