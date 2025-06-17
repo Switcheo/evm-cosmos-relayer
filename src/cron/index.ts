@@ -72,6 +72,7 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
         // TODO: Handle case 1
         // TODO: allow hydrogen to support syncing?
         logger.info(`fixStuckRelay: already sent to axelar with eventId: ${eventId}`)
+        await sendTelegramAlertWithPriority(`gmp already found on axelar with eventId: ${eventId}, we might need to resync on hydrogen`, 'notify')
       } else {
         // Handle case 2: tx not confirmed on axelar so did not emit EVMEventConfirmed
         // try to confirm tx
@@ -96,10 +97,12 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
       /* possible scenarios:
       1) Hydrogen didn't sync the Switcheo.carbon.bridge.BridgeReceivedEvent on Carbon
       2) tx wasn't routed or failed (ibc timeout)
+      3) ibc SendPacket emitted but not relayed or acknowledged, so status is unknown (can happen when carbon chain cannot be reached)
        */
 
       // TODO: Handle case 1
       // TODO: allow hydrogen to support syncing?
+      // TODO: query the event on carbon node, then alert if found
 
       // Handle case 2: tx wasn't routed or failed (ibc timeout)
       // try to route message
@@ -125,34 +128,40 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
 
       // TODO: Handle case 1
       // TODO: allow hydrogen to support syncing?
+      // TODO: query for axelar.axelarnet.v1beta1.ContractCallSubmitted on axelar node, if it exists, notify dev to sync or automate it
 
-      // Handle case 2: PendingAction not sent and somehow also not expired by carbon_axelar_execute_relayer (PendingAction should expire within 10 minutes)
-      // TODO: alert hydrogen chat
+      // Handle case 2: PendingAction not sent and somehow also not expired by carbon_axelar_execute_relayer (PendingAction should expire within 1 hour)
+      // TODO: alert dev
+      // TODO: query the pending action on carbon node, if it exists, do logic based on the action status e.g. if expired, expire it
+      // TODO: https://api.carbon.network/carbon/bridge/v1/pending_action/%7Bnonce%7D
 
       // Handle case 3: PendingAction sent but not relayed by IBC (have BridgeSentEvent, ModuleAxelarCallContractEvent)
-      // TODO: alert hydrogen chat
+      // TODO: alert dev
     }
     // Handle no destination tx
     else if (relay.destination_tx_hash === null) {
       console.debug('No destination_tx_hash found')
       /* possible scenarios:
       1) Hydrogen didn't sync the ContractCallExecuted on EVM
-      2) tx wasn't routed or failed on Axelar
-      3) evm command wasn't signed on Axelar  (message status: STATUS_APPROVED)
-      4) evm command wasn't batched on Axelar
-      5) tx was batched and but wasn't sent to EVM (no ContractCallApproved)
-      6) tx wasn't executed on EVM (have ContractCallApproved but no ContractCallExecuted)
+      2) tx wasn't routed or failed on Axelar ✅
+      3) evm command wasn't signed on Axelar  (message status: STATUS_APPROVED) ✅
+      4) evm command wasn't batched on Axelar ✅
+      5) tx was batched and but wasn't sent to EVM (no ContractCallApproved) ✅
+      6) tx wasn't executed on EVM (have ContractCallApproved but no ContractCallExecuted) ✅
        */
 
       const eventNames = relay.events.map((relayEvent) => relayEvent.name)
 
       // TODO: Handle case 1
       // TODO: allow hydrogen to support syncing?
+      // TODO: try to query the ContractCallExecuted event on the evm node
+      // TODO: if found, alert dev or automate hydrogen syncing
 
       // Handle case 6: tx wasn't executed on EVM (have ContractCallApproved but no ContractCallExecuted)
       if (eventNames.includes(EventName.ContractCallApproved)) {
-        console.warn(`ContractCall wasn't executed on EVM chain ${chain_id}. Either the carbon_axelar_execute_relayer ran out of funds or is not working properly.`)
-        // TODO: alert, ContractCall wasn't executed on EVM chain x. Either the carbon_axelar_execute_relayer ran out of funds or is not working properly.
+        const msg = `ContractCall wasn't executed on EVM chain ${chain_id}. Either the carbon_axelar_execute_relayer ran out of funds or is not working properly.`
+        console.warn(msg)
+        await sendTelegramAlertWithPriority(msg)
         return
       }
 
@@ -191,16 +200,27 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
           const pendingCommands = await axelarClient.getPendingCommands(chain_id)
 
           logger.info(`[handleCosmosToEvmEvent] PendingCommands: ${JSON.stringify(pendingCommands)}`)
-          if (pendingCommands.length === 0) return
+          if (pendingCommands.length === 0) {
+            const msg = `tx wasn't routed but no pending commands found for relay ${relay.id}.`
+            console.warn(msg)
+            await sendTelegramAlertWithPriority(msg)
+            return
+          }
 
           // - sign command
           const signCommand = await axelarClient.signCommands(chain_id)
           logger.debug(`[handleCosmosToEvmEvent] SignCommand: ${JSON.stringify(signCommand)}`)
 
           if (signCommand && signCommand.rawLog?.includes('failed')) {
+            const msg = `sign command failed for relay ${relay.id}.`
+            console.warn(msg)
+            await sendTelegramAlertWithPriority(msg)
             throw new Error(signCommand.rawLog)
           }
           if (!signCommand) {
+            const msg = `sign commands wasn't found for relay ${relay.id}.`
+            console.warn(msg)
+            await sendTelegramAlertWithPriority(msg)
             throw new Error('cannot sign command')
           }
         } else if (message.status === 3) {
@@ -218,12 +238,21 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
             logger.info(`[handleCosmosToEvmEvent] SignCommand: ${JSON.stringify(signCommand)}`)
 
             if (signCommand && signCommand.rawLog?.includes('failed')) {
+              const msg = `tx already routed but sign command failed for relay ${relay.id}.`
+              console.warn(msg)
+              await sendTelegramAlertWithPriority(msg)
               throw new Error(signCommand.rawLog)
             }
             if (!signCommand) {
+              const msg = `tx already routed but sign commands wasn't found for relay ${relay.id}.`
+              console.warn(msg)
+              await sendTelegramAlertWithPriority(msg)
               throw new Error('cannot sign command')
             }
           } else {
+            const msg = `tx already routed but no pending commands found for relay ${relay.id}.`
+            console.warn(msg)
+            await sendTelegramAlertWithPriority(msg)
             // TODO: either batched already or batched but didn't send
             // Handle case 4: evm command wasn't batched on Axelar
             logger.info('Handle case 4: evm command wasn\'t batched on Axelar (signed but not approved on evm)')
@@ -236,13 +265,6 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
           throw new Error(`messageId: ${messageId} message status is ${message.status} and cannot be handled`)
         }
       }
-
-      // TODO: implement
-
-
-
-
-
 
     }
   }
