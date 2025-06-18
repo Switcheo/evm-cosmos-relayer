@@ -4,7 +4,7 @@ import { AxelarClient, DatabaseClient, EventName, EvmClient, HydrogenClient, Rel
 import { logger } from '../logger'
 import { decodeBase64, removeQuote } from '../listeners/AxelarListener/parser'
 import { getBridgeIdAndChainIdFromConnectionId, isEventFoundOnAxelar, isEvmTxHeightFinalized } from './utils'
-import { sendTelegramAlertWithPriority } from 'cron/telegram'
+import { sendTelegramAlertWithPriority } from './telegram'
 import { sha256, toUtf8Bytes } from 'ethers/lib/utils'
 
 const db = new DatabaseClient()
