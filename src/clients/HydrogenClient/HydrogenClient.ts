@@ -32,7 +32,7 @@ export class HydrogenClient {
 async function fetchAsJson(url: string): Promise<any> {
   const res = await fetch(url)
   if (res.status !== 200) {
-    throw new Error('response is not 200')
+    throw new Error(`${url} response is not 200`)
   }
   return await res.json()
 }
