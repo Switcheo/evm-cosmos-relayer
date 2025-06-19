@@ -41,7 +41,7 @@ export async function fixInTransitFromHydrogen(evmClients: Record<string, EvmCli
       const axelarClient = await AxelarClient.init(db, axelarChain)
       await fixStuckRelay(db, axelarClient, hydrogenClient, demexClient, evmClients, relay)
     } catch (e) {
-      const msg = `Could not fix stuck relay due to error: ${e}`
+      const msg = `Could not fix stuck relay of id ${relay.id} due to error: ${e}`
       const messageHash = sha256(toUtf8Bytes(msg))
       console.error(msg)
       await sendTelegramAlertWithPriority(msg, 'notify', messageHash)
