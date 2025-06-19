@@ -1,6 +1,6 @@
 import cron from 'node-cron'
 import { axelarChain, env, evmChains } from '../config'
-import { AxelarClient, DatabaseClient, EventName, EvmClient, HydrogenClient, RelayData } from '../clients'
+import { AxelarClient, DatabaseClient, DemexClient, EventName, EvmClient, HydrogenClient, NewPendingActionEventParams, RelayData } from '../clients'
 import { logger } from '../logger'
 import { decodeBase64, removeQuote } from '../listeners/AxelarListener/parser'
 import { getBridgeIdAndChainIdFromConnectionId, isEventFoundOnAxelar, isEvmTxHeightFinalized } from './utils'
@@ -23,8 +23,9 @@ export const startCron = async () => {
 
 export async function fixInTransitFromHydrogen(evmClients: Record<string, EvmClient>, inboundThresholdTime: Date, outboundThresholdTime: Date) {
   const hydrogenClient = new HydrogenClient(env.HYDROGEN_URL)
+  const demexClient = new DemexClient(env.DEMEX_URL)
   // find axelar, in_transit relays
-  const inTransitRelays = await hydrogenClient.getInTransitRelays()
+  const inTransitRelays = await hydrogenClient.getInTransitAxelarRelays()
   if (inTransitRelays.length === 0) {
     // console.debug('No events in transit')
     return
@@ -38,7 +39,7 @@ export async function fixInTransitFromHydrogen(evmClients: Record<string, EvmCli
   for (const relay of stuckRelays) {
     try {
       const axelarClient = await AxelarClient.init(db, axelarChain)
-      await fixStuckRelay(db, axelarClient, hydrogenClient, evmClients, relay)
+      await fixStuckRelay(db, axelarClient, hydrogenClient, demexClient, evmClients, relay)
     } catch (e) {
       const msg = `Could not fix stuck relay due to error: ${e}`
       const messageHash = sha256(toUtf8Bytes(msg))
@@ -48,7 +49,7 @@ export async function fixInTransitFromHydrogen(evmClients: Record<string, EvmCli
   }
 }
 
-export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClient, hydrogenClient: HydrogenClient, evmClients: Record<string, EvmClient>, relayData: RelayData) {
+export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClient, hydrogenClient: HydrogenClient, demexClient: DemexClient, evmClients: Record<string, EvmClient>, relayData: RelayData) {
   const { chain_id } = getBridgeIdAndChainIdFromConnectionId(relayData.connection_id)
   logger.info(`Fixing relay id: ${relayData.id} for ${relayData.connection_id}`)
   // find the relay details with its corresponding events/payloads first
@@ -122,7 +123,7 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
       console.debug('No bridging_tx_hash found')
       /* possible scenarios:
       1) Hydrogen didn't sync the axelar.axelarnet.v1beta1.ContractCallSubmitted on axelar
-      2) PendingAction not sent and somehow also not expired by carbon_axelar_execute_relayer (PendingAction should expire within 10 minutes)
+      2) PendingAction not sent and somehow also not expired by carbon_axelar_execute_relayer (PendingAction should expire within 1 hour)
       3) PendingAction sent but not relayed by IBC (have BridgeSentEvent, ModuleAxelarCallContractEvent)
        */
 
@@ -130,13 +131,28 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
       // TODO: allow hydrogen to support syncing?
       // TODO: query for axelar.axelarnet.v1beta1.ContractCallSubmitted on axelar node, if it exists, notify dev to sync or automate it
 
+      // axelarChain.rpcUrl
+
+      // Handle case 3: PendingAction sent but not relayed by IBC (have BridgeSentEvent, ModuleAxelarCallContractEvent)
+      // TODO: alert dev
+
       // Handle case 2: PendingAction not sent and somehow also not expired by carbon_axelar_execute_relayer (PendingAction should expire within 1 hour)
       // TODO: alert dev
       // TODO: query the pending action on carbon node, if it exists, do logic based on the action status e.g. if expired, expire it
       // TODO: https://api.carbon.network/carbon/bridge/v1/pending_action/%7Bnonce%7D
+      const pendingActionEvent = relay.events.find((event) => event.name === EventName.NewPendingActionEvent)
+      if (!pendingActionEvent) {
+        throw new Error('pendingActionEvent not found in relay which is not possible as it is the first event')
+      }
+      const nonce = (pendingActionEvent.event_params as unknown as NewPendingActionEventParams).nonce
+      const pendingAction = await demexClient.getPendingAction(nonce)
 
-      // Handle case 3: PendingAction sent but not relayed by IBC (have BridgeSentEvent, ModuleAxelarCallContractEvent)
-      // TODO: alert dev
+      if (hasExpiredMoreThanOneHour(pendingAction.relay_details.expiry_block_time)) {
+        const msg = `pendingAction for relay ${relay.id} has expired but its not cleared. Either the carbon_axelar_execute_relayer ran out of funds or is not working properly.`
+        console.warn(msg)
+        await sendTelegramAlertWithPriority(msg)
+      }
+
     }
     // Handle no destination tx
     else if (relay.destination_tx_hash === null) {
@@ -268,4 +284,11 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
 
     }
   }
+}
+
+function hasExpiredMoreThanOneHour(expiryIsoString: string): boolean {
+  const expiryTime = new Date(expiryIsoString)
+  const now = new Date()
+  const diffMs = now.getTime() - expiryTime.getTime()
+  return diffMs > 60 * 60 * 1000
 }

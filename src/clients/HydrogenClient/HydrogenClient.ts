@@ -10,7 +10,7 @@ export class HydrogenClient {
     this.baseUrl = baseUrl
   }
 
-  async getInTransitRelays(): Promise<Array<RelayData>> {
+  async getInTransitAxelarRelays(): Promise<Array<RelayData>> {
     const resJson = await fetchAsJson(`${this.baseUrl}/relays?bridge=axelar&status=in_transit`)
     return resJson.data
   }

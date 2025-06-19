@@ -1,5 +1,5 @@
 import { axelarChain, env } from '../src/config'
-import { AxelarClient, DatabaseClient } from '../src/clients'
+import { AxelarClient, DatabaseClient, DemexClient, HydrogenClient } from '../src/clients'
 import { sendTelegramAlertWithPriority } from '../src/cron/telegram'
 
 // usage example:
@@ -23,7 +23,11 @@ async function main() {
   // }
   // console.log('eventOnAxelar', eventOnAxelar)
 
-  await sendTelegramAlertWithPriority('hello', 'critical')
+  // await sendTelegramAlertWithPriority('hello', 'critical')
+
+  const demexClient = new DemexClient(process.env.DEMEX_URL!)
+  const pendingaction = await demexClient.getPendingAction('32')
+  console.log('pendingaction', pendingaction)
 }
 
 (async () => {
