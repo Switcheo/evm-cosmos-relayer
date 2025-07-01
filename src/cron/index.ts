@@ -175,7 +175,7 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
 
       // Handle case 6: tx wasn't executed on EVM (have ContractCallApproved but no ContractCallExecuted)
       if (eventNames.includes(EventName.ContractCallApproved)) {
-        const msg = `ContractCall wasn't executed on EVM chain ${chain_id}. Either the carbon_axelar_execute_relayer ran out of funds or is not working properly.`
+        const msg = `ContractCall wasn't executed on EVM chain ${chain_id} for relay id ${relay.id}. Either the carbon_axelar_execute_relayer ran out of funds or is not working properly.`
         console.warn(msg)
         await sendTelegramAlertWithPriority(msg)
         return
