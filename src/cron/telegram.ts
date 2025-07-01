@@ -88,9 +88,9 @@ export async function sendTelegramAlert(message: string, conf: TelegramConfig) {
     return
   }
 
-  let sendMessage = message
+  let sendMessage = '<b>[evm-cosmos-relayer]</b>\n' + message
   if (notifyUsers && notifyUsers !== '') {
-    sendMessage = '<b>[evm-cosmos-relayer]</b>\n' + message + `\ncc: ${notifyUsers}`
+    sendMessage = sendMessage + `\ncc: ${notifyUsers}`
   }
 
   const options: AxiosRequestConfig = {
