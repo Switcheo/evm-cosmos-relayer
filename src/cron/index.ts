@@ -51,7 +51,12 @@ export async function fixInTransitFromHydrogen(evmClients: Record<string, EvmCli
 
 export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClient, hydrogenClient: HydrogenClient, demexClient: DemexClient, evmClients: Record<string, EvmClient>, relayData: RelayData) {
   const { chain_id } = getBridgeIdAndChainIdFromConnectionId(relayData.connection_id)
+  if (chain_id && !Object.keys(evmClients).includes(chain_id)) {
+    // no need to fix if there's no evm client initialized for that chain
+    return
+  }
   logger.info(`Fixing relay id: ${relayData.id} for ${relayData.connection_id}`)
+
   // find the relay details with its corresponding events/payloads first
   const relay = await hydrogenClient.getRelayWithDetails(relayData.id)
   if (relay.flow_type === 'in') {
