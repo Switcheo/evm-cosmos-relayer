@@ -105,6 +105,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@axelar-network/axelarjs-types@github:Switcheo/axelarjs-types#main":
+  version: 1.2.1
+  resolution: "@axelar-network/axelarjs-types@https://github.com/Switcheo/axelarjs-types.git#commit=ef82ad675bdebc2ae898aa1429775f12ebdbef9c"
+  dependencies:
+    long: "npm:^4.0.0"
+    protobufjs: "npm:~6.11.2"
+  checksum: 10c0/dba86634286ee3c3ec341be557ea6f20a79ce73d2dfca2cb33aee404d0db0c55f8c513c43da9cabd0bdf1b3fe2fdc7eab7b6d599d0652e103d7097b83852ae5b
+  languageName: node
+  linkType: hard
+
 "@axelar-network/axelarjs-types@npm:^0.33.0":
   version: 0.33.0
   resolution: "@axelar-network/axelarjs-types@npm:0.33.0"
@@ -4020,6 +4030,7 @@ __metadata:
   dependencies:
     "@axelar-network/axelar-gmp-sdk-solidity": "npm:^5.10.0"
     "@axelar-network/axelarjs-sdk": "npm:^0.16.2"
+    "@axelar-network/axelarjs-types": "github:Switcheo/axelarjs-types#main"
     "@hapi/hapi": "npm:^21.1.0"
     "@hapi/inert": "npm:^7.0.0"
     "@hapi/vision": "npm:^7.0.0"
