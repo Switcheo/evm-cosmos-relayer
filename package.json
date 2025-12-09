@@ -16,7 +16,7 @@
   "license": "ISC",
   "dependencies": {
     "@axelar-network/axelar-gmp-sdk-solidity": "^5.10.0",
-    "@axelar-network/axelarjs-sdk": "^0.16.2",
+    "@axelar-network/axelarjs-sdk": "^0.17.9",
     "@axelar-network/axelarjs-types": "github:Switcheo/axelarjs-types#main",
     "@hapi/hapi": "^21.1.0",
     "@hapi/inert": "^7.0.0",
@@ -36,6 +36,9 @@
     "utf-8-validate": "^6.0.0",
     "winston": "^3.8.2",
     "ws": "^8.12.0"
+  },
+  "resolutions": {
+    "@axelar-network/axelarjs-types": "github:Switcheo/axelarjs-types#ef82ad675bdebc2ae898aa1429775f12ebdbef9c"
   },
   "devDependencies": {
     "@jest/globals": "^29.3.1",
