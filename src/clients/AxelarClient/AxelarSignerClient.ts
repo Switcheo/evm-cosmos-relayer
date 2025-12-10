@@ -95,7 +95,8 @@ export class SignerClient {
           '[SignerClient.broadcast] Tx likely broadcast but CosmJS failed to decode events (SDK 0.50 / CometBFT mismatch). ' +
           'If you don’t need events, proceed as success, otherwise re-query via REST/GRPC.',
         );
-        return undefined; // or a fake DeliverTxResponse if your code expects it
+        // IMPORTANT: treat as "fire-and-forget"
+        return undefined;
       }
 
       if (msg.includes('account sequence mismatch')) {

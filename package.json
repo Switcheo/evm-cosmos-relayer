@@ -16,7 +16,7 @@
   "license": "ISC",
   "dependencies": {
     "@axelar-network/axelar-gmp-sdk-solidity": "^5.10.0",
-    "@axelar-network/axelarjs-sdk": "^0.17.9",
+    "@axelar-network/axelarjs-sdk": "github:Switcheo/axelarjs-sdk#chipshort/update-types",
     "@axelar-network/axelarjs-types": "github:Switcheo/axelarjs-types#main",
     "@hapi/hapi": "^21.1.0",
     "@hapi/inert": "^7.0.0",
