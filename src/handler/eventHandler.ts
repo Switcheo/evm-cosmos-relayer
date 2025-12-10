@@ -101,7 +101,7 @@ export async function handleCosmosToEvmEvent<
   if (pendingCommands.length === 0) return;
 
   const signCommand = await vxClient.signCommands(event.args.destinationChain);
-  logger.debug(`[handleCosmosToEvmEvent] SignCommand: ${JSON.stringify(signCommand)}`);
+  logger.debug('[handleCosmosToEvmEvent] SignCommand', { signCommand });
 
 
   // If we actually got a response and it's a failure → hard error
