@@ -7,7 +7,6 @@ import {
   RouteMessageRequest,
   protobufPackage as AxelarProtobufPackage,
 } from '@axelar-network/axelarjs-types/axelar/axelarnet/v1beta1/tx';
-import { toAccAddress } from '@cosmjs/stargate/build/queryclient/utils';
 import { fromHex } from '@cosmjs/encoding';
 import { utils } from 'ethers';
 
@@ -23,7 +22,7 @@ export function getConfirmGatewayTxPayload(sender: string, chain: string, txHash
     {
       typeUrl: `/${EvmProtobufPackage}.ConfirmGatewayTxRequest`,
       value: EvmConfirmGatewayTxRequest.fromPartial({
-        sender: toAccAddress(sender),
+        sender: sender,
         chain,
         txId: utils.arrayify(txHash),
       }),
@@ -41,7 +40,7 @@ export function getRouteMessageRequest(
     {
       typeUrl: `/${AxelarProtobufPackage}.RouteMessageRequest`,
       value: RouteMessageRequest.fromPartial({
-        sender: toAccAddress(sender),
+        sender: sender,
         payload: fromHex(payload.slice(2)),
         id: logIndex === -1 ? `${txHash}` : `${txHash}-${logIndex}`,
       }),
@@ -54,7 +53,7 @@ export function getSignCommandPayload(sender: string, chain: string) {
     {
       typeUrl: `/${EvmProtobufPackage}.SignCommandsRequest`,
       value: EvmSignCommandsRequest.fromPartial({
-        sender: toAccAddress(sender),
+        sender: sender,
         chain,
       }),
     },

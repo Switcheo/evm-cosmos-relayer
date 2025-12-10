@@ -16,15 +16,30 @@ import {
   ContractCallEventObject,
 } from '../types/contracts/IAxelarGateway';
 import { isEvmTxHeightFinalized } from '../cron/utils'
+import { SignCommandsResponse } from '@axelar-network/axelarjs-types/axelar/evm/v1beta1/tx'
+import { DeliverTxResponse } from '@cosmjs/stargate'
 
-export const getBatchCommandIdFromSignTx = (signTx: any) => {
-  const rawLog = JSON.parse(signTx.rawLog || '{}');
-  const events = rawLog[0].events;
-  const signEvent = events.find((event: { type: string }) => event.type === 'sign');
-  const batchedCommandId = signEvent.attributes.find(
-    (attr: { key: string }) => attr.key === 'batchedCommandID'
-  ).value;
-  return batchedCommandId;
+export const getBatchCommandIdFromSignTx = (signTx: DeliverTxResponse): string => {
+  // Preferred: decode from msgResponses
+  const anyResp = signTx.msgResponses?.find(
+    (r: any) => r.typeUrl === '/axelar.evm.v1beta1.SignCommandsResponse'
+  );
+
+  if (anyResp) {
+    const decoded = SignCommandsResponse.decode(anyResp.value);
+
+    // ts-proto / protobufjs usually camelCase proto field `batched_commands_id`
+    const idBytes =
+      (decoded as any).batchedCommandsId ||
+      (decoded as any).batched_commands_id ||
+      (decoded as any).BatchedCommandsID;
+
+    if (idBytes && idBytes.length) {
+      return '0x' + Buffer.from(idBytes).toString('hex');
+    }
+  }
+
+  throw new Error('Could not extract batched command ID from SignCommands tx');
 };
 
 export async function handleEvmToCosmosConfirmEvent(
@@ -101,8 +116,10 @@ export async function handleCosmosToEvmEvent<
   if (pendingCommands.length === 0) return;
 
   const signCommand = await vxClient.signCommands(event.args.destinationChain);
-  logger.debug(`[handleCosmosToEvmEvent] SignCommand: ${JSON.stringify(signCommand)}`);
+  logger.debug('[handleCosmosToEvmEvent] SignCommand', { signCommand });
 
+
+  // If we actually got a response and it's a failure → hard error
   if (signCommand && signCommand.rawLog?.includes('failed')) {
     throw new Error(signCommand.rawLog);
   }

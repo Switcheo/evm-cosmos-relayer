@@ -77,20 +77,26 @@ export class SignerClient {
     return this.sdk.getBalance(address, denom || 'uvx');
   }
 
-  public broadcast<T extends EncodeObject[]>(
+  public async broadcast<T extends EncodeObject[]>(
     payload: T,
     memo?: string,
-    retries = 0
-  ): Promise<DeliverTxResponse> {
+    retries = 0,
+  ): Promise<DeliverTxResponse | undefined> {
     if (retries >= this.maxRetries) throw new Error('Max retries exceeded');
-    return this.sdk.signThenBroadcast(payload, this.fee, memo).catch(async (e: any) => {
-      if (e.message.includes('account sequence mismatch')) {
-        logger.info(`Account sequence mismatch, retrying in ${this.retryDelay / 1000} seconds...`);
+
+    try {
+      return await this.sdk.signThenBroadcast(payload, this.fee, memo);
+    } catch (e: any) {
+      const msg = e?.message || String(e);
+      if (msg.includes('account sequence mismatch')) {
+        logger.info(
+          `Account sequence mismatch, retrying in ${this.retryDelay / 1000} seconds...`,
+        );
         await sleep(this.retryDelay);
         return this.broadcast(payload, memo, retries + 1);
       }
 
       throw e;
-    });
+    }
   }
 }
