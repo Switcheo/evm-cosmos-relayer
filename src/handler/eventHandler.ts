@@ -19,6 +19,8 @@ import { isEvmTxHeightFinalized } from '../cron/utils'
 
 export const getBatchCommandIdFromSignTx = (signTx: any) => {
   const rawLog = JSON.parse(signTx.rawLog || '{}');
+  console.log('getBatchCommandIdFromSignTx', signTx);
+  console.log('getBatchCommandIdFromSignTx', JSON.stringify(signTx));
   const events = rawLog[0].events;
   const signEvent = events.find((event: { type: string }) => event.type === 'sign');
   const batchedCommandId = signEvent.attributes.find(

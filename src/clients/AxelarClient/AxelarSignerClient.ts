@@ -88,17 +88,6 @@ export class SignerClient {
       return await this.sdk.signThenBroadcast(payload, this.fee, memo);
     } catch (e: any) {
       const msg = e?.message || String(e);
-
-      // Axelar + SDK 0.50 event decoding failure
-      if (msg.includes('Invalid string. Length must be a multiple of 4')) {
-        logger.warn(
-          '[SignerClient.broadcast] Tx likely broadcast but CosmJS failed to decode events (SDK 0.50 / CometBFT mismatch). ' +
-          'If you don’t need events, proceed as success, otherwise re-query via REST/GRPC.',
-        );
-        // IMPORTANT: treat as "fire-and-forget"
-        return undefined;
-      }
-
       if (msg.includes('account sequence mismatch')) {
         logger.info(
           `Account sequence mismatch, retrying in ${this.retryDelay / 1000} seconds...`,
