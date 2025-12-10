@@ -108,15 +108,8 @@ export async function handleCosmosToEvmEvent<
   if (signCommand && signCommand.rawLog?.includes('failed')) {
     throw new Error(signCommand.rawLog);
   }
-
-  // CosmJS decode bug path: broadcast likely succeeded, but we have no tx response
   if (!signCommand) {
-    logger.warn(
-      '[handleCosmosToEvmEvent] signCommands result is undefined – assuming broadcast succeeded ' +
-      'but CosmJS failed to decode events. Skipping batch id parsing and EVM execute; Axelar ' +
-      'should handle execution if its own EVM relayer is running.'
-    );
-    return;
+    throw new Error('cannot sign command');
   }
 
   const batchedCommandId = getBatchCommandIdFromSignTx(signCommand);
