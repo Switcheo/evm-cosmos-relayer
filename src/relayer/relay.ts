@@ -1,42 +1,11 @@
-import { Subject, mergeMap, filter } from 'rxjs'
-import { AxelarClient, EvmClient, DatabaseClient } from '../clients';
-import { axelarChain, cosmosChains, evmChains } from '../config';
-import {
-  ContractCallSubmitted,
-  ContractCallWithTokenSubmitted,
-  EvmEvent,
-  ExecuteRequest, IBCEvent,
-  IBCPacketEvent,
-} from '../types'
-import {
-  AxelarCosmosContractCallEvent,
-  AxelarCosmosContractCallWithTokenEvent,
-  AxelarEVMEventCompletedEvent,
-  AxelarIBCCompleteEvent,
-  EvmContractCallApprovedEvent,
-  EvmContractCallEvent,
-  EvmContractCallWithTokenApprovedEvent,
-  EvmContractCallWithTokenEvent,
-  EvmListener,
-  AxelarListener,
-} from '../listeners';
-import {
-  ContractCallEventObject,
-  ContractCallApprovedEventObject,
-  ContractCallWithTokenEventObject,
-  ContractCallApprovedWithMintEventObject,
-} from '../types/contracts/IAxelarGateway';
-import {
-  handleAnyError,
-  handleEvmToCosmosCompleteEvent,
-  handleCosmosToEvmCallContractWithTokenCompleteEvent,
-  handleEvmToCosmosEvent,
-  handleCosmosToEvmCallContractCompleteEvent,
-  prepareHandler,
-  handleEvmToCosmosConfirmEvent,
-  handleCosmosToEvmEvent,
-} from '../handler';
-import { createCosmosEventSubject, createEvmEventSubject } from './subject';
+import { mergeMap, Subject } from 'rxjs'
+import { AxelarClient, DatabaseClient, EvmClient } from '../clients'
+import { axelarChain, cosmosChains, evmChains } from '../config'
+import { ContractCallSubmitted, ContractCallWithTokenSubmitted, EvmEvent, ExecuteRequest, IBCEvent, IBCPacketEvent, } from '../types'
+import { AxelarCosmosContractCallEvent, AxelarCosmosContractCallWithTokenEvent, AxelarEVMEventCompletedEvent, AxelarIBCCompleteEvent, AxelarListener, EvmContractCallApprovedEvent, EvmContractCallEvent, EvmContractCallWithTokenApprovedEvent, EvmContractCallWithTokenEvent, EvmListener, } from '../listeners'
+import { ContractCallApprovedEventObject, ContractCallApprovedWithMintEventObject, ContractCallEventObject, ContractCallWithTokenEventObject, } from '../types/contracts/IAxelarGateway'
+import { handleAnyError, handleCosmosToEvmCallContractCompleteEvent, handleCosmosToEvmCallContractWithTokenCompleteEvent, handleCosmosToEvmEvent, handleEvmToCosmosCompleteEvent, handleEvmToCosmosConfirmEvent, handleEvmToCosmosEvent, prepareHandler, } from '../handler'
+import { createCosmosEventSubject, createEvmEventSubject } from './subject'
 import { filterCosmosDestination, filterDestinationCarbonToEvm, filterDestinationEvmToCarbon, filterSourceChainOnEvm, mapEventToEvmClient } from './rxOperators'
 
 const sEvmCallContract = createEvmEventSubject<ContractCallEventObject>();

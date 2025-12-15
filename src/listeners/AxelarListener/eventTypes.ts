@@ -16,11 +16,13 @@ export const AxelarEVMEventCompletedEvent: AxelarListenerEvent<ExecuteRequest> =
   parseEvent: parser.parseEvmEventCompletedEvent,
 };
 
+const sourceChainFilter = process.env.FILTER_ONLY_COSMOS_CARBON === 'true' ?
+  `CONTAINS 'carbon'` : 'EXISTS'
 export const AxelarCosmosContractCallEvent: AxelarListenerEvent<
   IBCEvent<ContractCallSubmitted>
 > = {
   type: 'axelar.axelarnet.v1beta1.ContractCallSubmitted',
-  topicId: `tm.event='Tx' AND axelar.axelarnet.v1beta1.ContractCallSubmitted.source_chain CONTAINS 'carbon'`,
+  topicId: `tm.event='Tx' AND axelar.axelarnet.v1beta1.ContractCallSubmitted.source_chain ${sourceChainFilter}`,
   parseEvent: parser.parseContractCallSubmittedEvent,
 };
 
@@ -28,7 +30,7 @@ export const AxelarCosmosContractCallWithTokenEvent: AxelarListenerEvent<
   IBCEvent<ContractCallWithTokenSubmitted>
 > = {
   type: 'axelar.axelarnet.v1beta1.ContractCallWithTokenSubmitted',
-  topicId: `tm.event='Tx' AND axelar.axelarnet.v1beta1.ContractCallWithTokenSubmitted.source_chain CONTAINS 'carbon'`,
+  topicId: `tm.event='Tx' AND axelar.axelarnet.v1beta1.ContractCallWithTokenSubmitted.source_chain ${sourceChainFilter}`,
   parseEvent: parser.parseContractCallWithTokenSubmittedEvent,
 };
 
