@@ -327,7 +327,7 @@ export async function prepareHandler(event: any, db: DatabaseClient, label = '')
 }
 
 const getPacketSequenceFromExecuteTx = (executeTx: any) => {
-  console.log(JSON.stringify(executeTx));
+  console.log(executeTx);
   const rawLog = JSON.parse(executeTx.rawLog || '{}');
   const events = rawLog[0].events;
   const sendPacketEvent = events.find((event: { type: string }) => event.type === 'send_packet');
