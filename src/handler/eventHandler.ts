@@ -328,11 +328,31 @@ export async function prepareHandler(event: any, db: DatabaseClient, label = '')
 
 const getPacketSequenceFromExecuteTx = (executeTx: any) => {
   console.log(executeTx);
-  const rawLog = JSON.parse(executeTx.rawLog || '{}');
-  const events = rawLog[0].events;
-  const sendPacketEvent = events.find((event: { type: string }) => event.type === 'send_packet');
-  const seq = sendPacketEvent.attributes.find(
-    (attr: { key: string }) => attr.key === 'packet_sequence'
-  ).value;
-  return parseInt(seq);
+  const events =
+    executeTx?.events ??
+    executeTx?.tx_response?.events ?? // optional fallback
+    null
+
+  if (Array.isArray(events)) {
+    const sendPacketEvent = events.find((e: any) => e?.type === 'send_packet')
+    const attrs = sendPacketEvent?.attributes
+
+    if (!Array.isArray(attrs)) {
+      throw new Error('send_packet event found but attributes missing')
+    }
+
+    const seqAttr = attrs.find((a: any) => a?.key === 'packet_sequence')
+    const seq = seqAttr?.value
+
+    if (seq == null) {
+      throw new Error('packet_sequence not found on send_packet event')
+    }
+
+    const n = Number(seq)
+    if (!Number.isFinite(n)) {
+      throw new Error(`packet_sequence is not a number: ${seq}`)
+    }
+
+    return n
+  }
 };
