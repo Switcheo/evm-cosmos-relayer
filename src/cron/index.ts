@@ -271,15 +271,18 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
               throw new Error('cannot sign command')
             }
           } else {
-            const msg = `tx already routed but no pending commands found for relay ${relay.id}.`
-            console.warn(msg)
-            await sendTelegramAlertWithPriority(msg)
-            // TODO: either batched already or batched but didn't send
-            // Handle case 4: evm command wasn't batched on Axelar
-            logger.info('Handle case 4: evm command wasn\'t batched on Axelar (signed but not approved on evm)')
-            // Handle case 5: tx was batched but wasn't sent to EVM (no ContractCallApproved)
-            logger.info('Handle case 5: tx was batched but wasn\'t sent to EVM (signed but not approved on evm)')
-            // TODO: alert, ContractCallApproved wasn't approved on EVM chain x. For some reason axelar did not send the batched tx. Please investigate.
+            // Handle case 4/5: command was already batched (not in pending), but the batch
+            // was never sent to EVM. This can happen when a later batch was signed before
+            // the earlier one was executed on EVM. Scan backwards through batches and send
+            // any BatchSigned batch whose commands haven't been executed on EVM yet.
+            logger.info('Handle case 4/5: scanning backwards through batches to find and send stuck batch')
+            const evmClient = evmClients[chain_id]
+            const sent = await sendStuckBatches(axelarClient, evmClient, chain_id)
+            if (!sent) {
+              const msg = `tx already routed but could not find unexecuted batch for relay ${relay.id} on chain ${chain_id}.`
+              console.warn(msg)
+              await sendTelegramAlertWithPriority(msg)
+            }
           }
 
         } else {
@@ -289,6 +292,56 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
 
     }
   }
+}
+
+async function sendStuckBatches(
+  axelarClient: AxelarClient,
+  evmClient: EvmClient,
+  chain: string,
+  maxLookback = 10
+): Promise<boolean> {
+  const batchesToSend: { id: string; executeData: string }[] = []
+  let batchId = '' // empty string = latest batch per the API spec
+
+  for (let i = 0; i < maxLookback; i++) {
+    const batch = await axelarClient.queryBatchedCommands(chain, batchId)
+
+    if (!batch || !batch.id) break // NonExistent
+
+    if (batch.status === 3 /* BatchSigned */) {
+      if (batch.commandIds.length > 0) {
+        const firstId = batch.commandIds[0]
+        const commandIdHex = firstId.startsWith('0x') ? firstId : '0x' + firstId
+        const isExecuted = await evmClient.isExecuted(commandIdHex)
+
+        if (!isExecuted) {
+          batchesToSend.push({ id: batch.id, executeData: '0x' + batch.executeData })
+        } else {
+          // This batch was already sent to EVM — everything before it is too, stop scanning
+          break
+        }
+      }
+    } else if (batch.status === 1 /* BatchSigning */) {
+      // Multisig still in progress — command may be in this batch but nothing to do yet.
+      // Continue backwards in case there's an older stuck BatchSigned batch as well.
+      logger.info(`sendStuckBatches: batch ${batch.id} still signing for chain ${chain}`)
+    }
+    // BatchAborted (status 2): skip, continue backwards
+
+    if (!batch.prevBatchedCommandsId) break
+    batchId = batch.prevBatchedCommandsId
+  }
+
+  if (batchesToSend.length === 0) return false
+
+  // Send oldest-first so EVM state is consistent
+  for (const { id, executeData } of batchesToSend.reverse()) {
+    logger.info(`sendStuckBatches: sending unexecuted batch ${id} to EVM chain ${chain}`)
+    const tx = await evmClient.gatewayExecute(executeData)
+    if (tx) logger.info(`sendStuckBatches: batch ${id} executed: ${tx.transactionHash}`)
+  }
+
+  return true
 }
 
 function hasExpiredMoreThanOneHour(expiryIsoString: string): boolean {
