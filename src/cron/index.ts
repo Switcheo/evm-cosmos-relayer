@@ -5,6 +5,7 @@ import { logger } from '../logger'
 import { decodeBase64, removeQuote } from '../listeners/AxelarListener/parser'
 import { getBridgeIdAndChainIdFromConnectionId, isEventFoundOnAxelar, isEvmTxHeightFinalized } from './utils'
 import { sendTelegramAlertWithPriority } from './telegram'
+import { sendStuckBatches } from './sendStuckBatches'
 import { sha256, toUtf8Bytes } from 'ethers/lib/utils'
 
 const db = new DatabaseClient()
@@ -271,15 +272,18 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
               throw new Error('cannot sign command')
             }
           } else {
-            const msg = `tx already routed but no pending commands found for relay ${relay.id}.`
-            console.warn(msg)
-            await sendTelegramAlertWithPriority(msg)
-            // TODO: either batched already or batched but didn't send
-            // Handle case 4: evm command wasn't batched on Axelar
-            logger.info('Handle case 4: evm command wasn\'t batched on Axelar (signed but not approved on evm)')
-            // Handle case 5: tx was batched but wasn't sent to EVM (no ContractCallApproved)
-            logger.info('Handle case 5: tx was batched but wasn\'t sent to EVM (signed but not approved on evm)')
-            // TODO: alert, ContractCallApproved wasn't approved on EVM chain x. For some reason axelar did not send the batched tx. Please investigate.
+            // Handle case 4/5: command was already batched (not in pending), but the batch
+            // was never sent to EVM. This can happen when a later batch was signed before
+            // the earlier one was executed on EVM. Scan backwards through batches and send
+            // any BatchSigned batch whose commands haven't been executed on EVM yet.
+            logger.info('Handle case 4/5: scanning backwards through batches to find and send stuck batch')
+            const evmClient = evmClients[chain_id]
+            const sent = await sendStuckBatches(axelarClient, evmClient, chain_id)
+            if (!sent) {
+              const msg = `tx already routed but could not find unexecuted batch for relay ${relay.id} on chain ${chain_id}.`
+              console.warn(msg)
+              await sendTelegramAlertWithPriority(msg)
+            }
           }
 
         } else {
@@ -290,6 +294,7 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
     }
   }
 }
+
 
 function hasExpiredMoreThanOneHour(expiryIsoString: string): boolean {
   const expiryTime = new Date(expiryIsoString)

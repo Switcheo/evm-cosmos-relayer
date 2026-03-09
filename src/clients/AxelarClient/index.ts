@@ -58,6 +58,10 @@ export class AxelarClient {
     });
   }
 
+  public queryBatchedCommands(chain: string, id: string) {
+    return this.signingClient.queryClient.evm.BatchedCommands({ chain, id });
+  }
+
   public async getExecuteDataFromBatchCommands(chain: string, id: string) {
     // wait until status: 3
     let response = await this.signingClient.queryClient.evm.BatchedCommands({
