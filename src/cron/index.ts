@@ -231,7 +231,7 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
 
           // - sign command
           const signCommand = await axelarClient.signCommands(chain_id)
-          logger.debug(`[handleCosmosToEvmEvent] SignCommand: ${JSON.stringify(signCommand)}`)
+          logger.debug(`[handleCosmosToEvmEvent] SignCommand: ${JSON.stringify(signCommand, (_, v) => typeof v === 'bigint' ? v.toString() : v)}`)
 
           if (signCommand && signCommand.rawLog?.includes('failed')) {
             const msg = `sign command failed for relay ${relay.id}.`
@@ -257,7 +257,7 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
             logger.info('Handle case 3: evm command wasn\'t signed on Axelar (already routed, in pending command)')
             // - sign command
             const signCommand = await axelarClient.signCommands(chain_id)
-            logger.info(`[handleCosmosToEvmEvent] SignCommand: ${JSON.stringify(signCommand)}`)
+            logger.info(`[handleCosmosToEvmEvent] SignCommand: ${JSON.stringify(signCommand, (_, v) => typeof v === 'bigint' ? v.toString() : v)}`)
 
             if (signCommand && signCommand.rawLog?.includes('failed')) {
               const msg = `tx already routed but sign command failed for relay ${relay.id}.`
