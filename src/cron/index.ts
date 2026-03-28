@@ -3,7 +3,7 @@ import { axelarChain, env, evmChains } from '../config'
 import { AxelarClient, DatabaseClient, DemexClient, EventName, EvmClient, HydrogenClient, NewPendingActionEventParams, RelayData } from '../clients'
 import { logger } from '../logger'
 import { decodeBase64, removeQuote } from '../listeners/AxelarListener/parser'
-import { getBridgeIdAndChainIdFromConnectionId, isEventFoundOnAxelar, isEvmTxHeightFinalized } from './utils'
+import { getBridgeIdAndChainIdFromConnectionId, isEventFoundOnAxelar, isEvmTxHeightFinalized, findContractCallSubmittedOnAxelar, computePayloadHashBase64 } from './utils'
 import { sendTelegramAlertWithPriority } from './telegram'
 import { sendStuckBatches } from './sendStuckBatches'
 import { sha256, toUtf8Bytes } from 'ethers/lib/utils'
@@ -133,26 +133,42 @@ export async function fixStuckRelay(db: DatabaseClient, axelarClient: AxelarClie
       3) PendingAction sent but not relayed by IBC (have BridgeSentEvent, ModuleAxelarCallContractEvent)
        */
 
-      // TODO: Handle case 1
-      // TODO: allow hydrogen to support syncing?
-      // TODO: query for axelar.axelarnet.v1beta1.ContractCallSubmitted on axelar node, if it exists, notify dev to sync or automate it
-
-      // axelarChain.rpcUrl
-
-      // Handle case 3: PendingAction sent but not relayed by IBC (have BridgeSentEvent, ModuleAxelarCallContractEvent)
-      // TODO: alert dev
+      // Handle case 1: Hydrogen didn't sync the axelar.axelarnet.v1beta1.ContractCallSubmitted on axelar
+      const moduleAxelarCallEvent = relay.events.find((event) => event.name === EventName.ModuleAxelarCallContractEvent)
+      const bridgeAcknowledgedEvent = relay.events.find((event) => event.name === EventName.BridgeAcknowledgedEvent)
+      if (moduleAxelarCallEvent && bridgeAcknowledgedEvent) {
+        // IBC packet was sent from Carbon → PendingAction may already be consumed, so use payload from the event
+        const payload = moduleAxelarCallEvent.event_params['payload']
+        if (!payload) {
+          throw new Error(`ModuleAxelarCallContractEvent has no payload field. Available fields: ${Object.keys(moduleAxelarCallEvent.event_params).join(', ')}`)
+        }
+        const payloadHashBase64 = computePayloadHashBase64(payload)
+        const messageId = await findContractCallSubmittedOnAxelar(
+          axelarChain.rpcUrl,
+          chain_id,
+          payloadHashBase64,
+        )
+        if (messageId !== null) {
+          // Case 1: ContractCallSubmitted exists on axelar but Hydrogen didn't index it
+          const msg = `ContractCallSubmitted found on axelar (messageId: ${messageId || 'unknown'}) but not indexed in Hydrogen for relay ${relay.id}. Hydrogen may need resyncing.`
+          logger.warn(msg)
+          await sendTelegramAlertWithPriority(msg, 'notify')
+        } else {
+          // Case 3: IBC packet sent from Carbon but axelar never received it
+          const msg = `IBC packet was sent from Carbon but ContractCallSubmitted not found on axelar for relay ${relay.id}. Check IBC relayer connectivity.`
+          logger.warn(msg)
+          await sendTelegramAlertWithPriority(msg)
+        }
+        return
+      }
 
       // Handle case 2: PendingAction not sent and somehow also not expired by carbon_axelar_execute_relayer (PendingAction should expire within 1 hour)
-      // TODO: alert dev
-      // TODO: query the pending action on carbon node, if it exists, do logic based on the action status e.g. if expired, expire it
-      // TODO: https://api.carbon.network/carbon/bridge/v1/pending_action/%7Bnonce%7D
       const pendingActionEvent = relay.events.find((event) => event.name === EventName.NewPendingActionEvent)
       if (!pendingActionEvent) {
         throw new Error('pendingActionEvent not found in relay which is not possible as it is the first event')
       }
       const nonce = (pendingActionEvent.event_params as unknown as NewPendingActionEventParams).nonce
       const pendingAction = await demexClient.getPendingAction(nonce)
-
       if (hasExpiredMoreThanOneHour(pendingAction.relay_details.expiry_block_time)) {
         const msg = `pendingAction for relay ${relay.id} has expired but its not cleared. Either the carbon_axelar_execute_relayer ran out of funds or is not working properly.`
         console.warn(msg)

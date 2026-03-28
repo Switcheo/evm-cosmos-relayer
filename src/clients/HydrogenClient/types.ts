@@ -27,6 +27,7 @@ export type RelayDetail = {
   destination_blockchain: string
   destination_tx_hash: string
   bridge: string
+  connection_id: string
   bridging_tx_hash: string
   payload_type: string
   created_at: string
