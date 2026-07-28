@@ -1,5 +1,5 @@
 import { filter, of, throwError } from 'rxjs';
-import { ContractCallSubmitted, ContractCallWithTokenSubmitted, EvmEvent, ExecuteRequest, IBCEvent, IBCPacketEvent } from '../types'
+import { ContractCallSubmitted, ContractCallWithTokenSubmitted, EvmEvent, ExecuteRequest, IBCEvent } from '../types'
 import {
   ContractCallApprovedEventObject,
   ContractCallApprovedWithMintEventObject,

@@ -50,7 +50,7 @@ function makeAxelarClient(batches: ReturnType<typeof makeBatch>[]) {
 function makeEvmClient(executedCommandIds: Set<string> = new Set()) {
   return {
     isExecuted: jest.fn(async (commandId: string) => executedCommandIds.has(commandId)),
-    gatewayExecute: jest.fn(async (_data: string) => ({ transactionHash: '0xtxhash' })),
+    gatewayExecute: jest.fn(async () => ({ transactionHash: '0xtxhash' })),
   } as any
 }
 

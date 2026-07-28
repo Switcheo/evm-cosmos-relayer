@@ -66,8 +66,3 @@ const filterEventArgs = (event: TypedEvent) => {
     return acc;
   }, {} as any);
 };
-
-const delay = (ms: number): Promise<void> => {
-  logger.info(`Waiting ${ms / 1000} seconds...`);
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
