@@ -1,6 +1,6 @@
 import fetch from 'node-fetch'
+import { keccak256 } from 'ethers/lib/utils'
 import { AxelarClient, EvmClient } from 'clients'
-import { logger } from '../logger'
 
 export const LegacyChainIdMap: Record<string, string> = {
   ethereum: 'Ethereum',
@@ -50,7 +50,6 @@ export function getBridgeIdAndChainIdFromConnectionId(connection_id: string): {
  * PendingAction.execution_bytes is the same payload (base64-encoded).
  */
 export function computePayloadHashBase64(executionBytesBase64: string): string {
-  const { keccak256 } = require('ethers/lib/utils')
   const payloadBytes = Buffer.from(executionBytesBase64, 'base64')
   const hashHex: string = keccak256(payloadBytes)           // "0xabc..."
   return Buffer.from(hashHex.slice(2), 'hex').toString('base64')

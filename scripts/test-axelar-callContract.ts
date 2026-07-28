@@ -1,6 +1,6 @@
 import { evmChains } from '../src/config'
 import { EvmClient } from '../src/clients'
-import { BigNumber, utils } from 'ethers'
+import { utils } from 'ethers'
 
 // usage example:
 // ts-node scripts/test-axelar-callContract.ts [from-chain] [to-chain] [to-address] [payload]

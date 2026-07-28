@@ -1,4 +1,3 @@
-import { keccak256 } from 'ethers/lib/utils'
 import { axelarChain, env } from '../src/config'
 import { EventName, HydrogenClient } from '../src/clients'
 import { getBridgeIdAndChainIdFromConnectionId, findContractCallSubmittedOnAxelar, computePayloadHashBase64 } from '../src/cron/utils'

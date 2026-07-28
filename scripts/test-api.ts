@@ -1,6 +1,4 @@
-import { axelarChain, env } from '../src/config'
-import { AxelarClient, DatabaseClient, DemexClient, HydrogenClient } from '../src/clients'
-import { sendTelegramAlertWithPriority } from '../src/cron/telegram'
+import { DemexClient } from '../src/clients'
 
 // usage example:
 // ts-node scripts/fix-stuck-relays.ts
